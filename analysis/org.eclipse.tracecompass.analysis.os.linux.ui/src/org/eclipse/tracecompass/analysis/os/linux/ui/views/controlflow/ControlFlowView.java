@@ -239,7 +239,7 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
     protected void buildEventList(final ITmfTrace trace, final ITmfTrace parentTrace, final IProgressMonitor monitor) {
 
         final ITmfStateSystem ssq2 = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID);
-        System.out.println("hani");
+
         if (trace.getName().equals("kernel")) { //$NON-NLS-1$
             return;
         }
