@@ -29,12 +29,18 @@ public class ResourcesEntry extends TimeGraphEntry implements Comparable<ITimeGr
     public static enum Type {
         /** Null resources (filler rows, etc.) */
         NULL,
+        /**
+         * @since 1.1
+         *
+         */
+        IO,
         /** Entries for CPUs */
         CPU,
         /** Entries for IRQs */
         IRQ,
         /** Entries for Soft IRQ */
         SOFT_IRQ
+
     }
 
     private final int fId;

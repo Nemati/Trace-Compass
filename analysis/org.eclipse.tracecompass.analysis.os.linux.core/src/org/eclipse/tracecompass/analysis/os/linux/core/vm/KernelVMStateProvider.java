@@ -1,62 +1,67 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Ericsson
- * Copyright (c) 2010, 2011 École Polytechnique de Montréal
- * Copyright (c) 2010, 2011 Alexandre Montplaisir <alexandre.montplaisir@gmail.com>
+ * Copyright (c) 2014, 2015 École Polytechnique de Montréal
  *
  * All rights reserved. This program and the accompanying materials are
  * made available under the terms of the Eclipse Public License v1.0 which
  * accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
+ * Contributors:
+ *   François Rajotte - Initial API and implementation
+ *   Geneviève Bastien - Revision of the initial implementation
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.analysis.os.linux.core.kernelanalysis;
+package org.eclipse.tracecompass.analysis.os.linux.core.vm;
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.util.Map;
 
+//import java.util.HashMap;
+//import java.util.Map;
+
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.StateValues;
+//import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes;
+//import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes;
 import org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelAnalysisEventLayout;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernelanalysis.LinuxValues;
+//import org.eclipse.tracecompass.internal.analysis.os.linux.core.Activator;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystemBuilder;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateValueTypeException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.TimeRangeException;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.statesystem.core.statevalue.TmfStateValue;
+//import org.eclipse.tracecompass.statesystem.core.statevalue.TmfStateValue;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEventField;
 import org.eclipse.tracecompass.tmf.core.event.aspect.TmfCpuAspect;
+//import org.eclipse.tracecompass.tmf.core.event.aspect.TmfCpuAspect;
 import org.eclipse.tracecompass.tmf.core.statesystem.AbstractTmfStateProvider;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
+//import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
 
 import com.google.common.collect.ImmutableMap;
 
 /**
- * This is the state change input plugin for TMF's state system which handles
- * the LTTng 2.0 kernel traces in CTF format.
+ * Creates a state system with the total time spent on CPU for each thread and
+ * for each CPU from a kernel trace.
  *
- * It uses the reference handler defined in CTFKernelHandler.java.
+ * This state system in itself keeps the total time on CPU since last time the
+ * process was scheduled out. The state system queries will only be accurate
+ * when the process is not in a running state. To have exact CPU usage when
+ * running, this state system needs to be used along the LTTng Kernel analysis.
  *
- * @author alexmont
+ * It requires only the 'sched_switch' events enabled on the trace.
  *
+ * @author François Rajotte
  */
-public class KernelStateProvider extends AbstractTmfStateProvider {
-
-    // ------------------------------------------------------------------------
-    // Static fields
-    // ------------------------------------------------------------------------
-
-    /**
-     * Version number of this state provider. Please bump this if you modify the
-     * contents of the generated state history in some way.
-     */
-    private static final int VERSION = 8;
-
+public class KernelVMStateProvider extends AbstractTmfStateProvider {
+    private final Map<String, Integer> fEventNames;
+    private static final int VERSION = 2;
     private static final int IRQ_HANDLER_ENTRY_INDEX = 1;
     private static final int IRQ_HANDLER_EXIT_INDEX = 2;
     private static final int SOFT_IRQ_ENTRY_INDEX = 3;
@@ -71,36 +76,10 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     private static final int SCHED_PI_SETPRIO_INDEX = 12;
     private static final int SUBMIT_IO = 13;
     private static final int COMPLETE_IO = 14;
-
-    // ------------------------------------------------------------------------
-    // Fields
-    // ------------------------------------------------------------------------
-
-    private final Map<String, Integer> fEventNames;
+    /* For each CPU, maps the last time a thread was scheduled in */
+    //    private final Map<Integer, Long> fLastStartTimes = new HashMap<>();
+    //   private final long fTraceStart;
     private final IKernelAnalysisEventLayout fLayout;
-
-    // ------------------------------------------------------------------------
-    // Constructor
-    // ------------------------------------------------------------------------
-
-    /**
-     * Instantiate a new state provider plugin.
-     *
-     * @param trace
-     *            The LTTng 2.0 kernel trace directory
-     * @param layout
-     *            The event layout to use for this state provider. Usually
-     *            depending on the tracer implementation.
-     */
-    public KernelStateProvider(ITmfTrace trace, IKernelAnalysisEventLayout layout) {
-        super(trace, "Kernel"); //$NON-NLS-1$
-        fLayout = layout;
-        fEventNames = buildEventNames(layout);
-    }
-
-    // ------------------------------------------------------------------------
-    // Event names management
-    // ------------------------------------------------------------------------
 
     private static Map<String, Integer> buildEventNames(IKernelAnalysisEventLayout layout) {
         ImmutableMap.Builder<String, Integer> builder = ImmutableMap.builder();
@@ -117,6 +96,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         builder.put(layout.eventSchedProcessFree(), SCHED_PROCESS_FREE_INDEX);
         builder.put(layout.eventSubmitIO(), SUBMIT_IO);
         builder.put(layout.eventCompleteIO(), COMPLETE_IO);
+
         final String eventStatedumpProcessState = layout.eventStatedumpProcessState();
         if (eventStatedumpProcessState != null) {
             builder.put(eventStatedumpProcessState, STATEDUMP_PROCESS_STATE_INDEX);
@@ -129,8 +109,50 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         return checkNotNull(builder.build());
     }
 
+    /**
+     * When we want to set a process back to a "running" state, first check
+     * its current System_call attribute. If there is a system call active, we
+     * put the process back in the syscall state. If not, we put it back in
+     * user mode state.
+     */
+    private static void setProcessToRunning(ITmfStateSystemBuilder ssb, long ts, int currentThreadNode)
+            throws AttributeNotFoundException, TimeRangeException,
+            StateValueTypeException {
+        int quark;
+        ITmfStateValue value;
+
+        quark = ssb.getQuarkRelativeAndAdd(currentThreadNode, Attributes.SYSTEM_CALL);
+        if (ssb.queryOngoingState(quark).isNull()) {
+            /* We were in user mode before the interruption */
+            value = StateValues.PROCESS_STATUS_RUN_USERMODE_VALUE;
+        } else {
+            /* We were previously in kernel mode */
+            value = StateValues.PROCESS_STATUS_RUN_SYSCALL_VALUE;
+        }
+        quark = ssb.getQuarkRelativeAndAdd(currentThreadNode, Attributes.STATUS);
+        ssb.modifyAttribute(ts, value, quark);
+    }
+
+
+
+    /**
+     * Constructor
+     *
+     * @param trace
+     *            The trace from which to get the CPU usage
+     * @param layout
+     *            The event layout to use for this state provider.
+     */
+
+    public KernelVMStateProvider(ITmfTrace trace, IKernelAnalysisEventLayout layout) {
+        super(trace, "vm"); //$NON-NLS-1$
+        //        fTraceStart = trace.getStartTime().getValue();
+        fLayout = layout;
+        fEventNames = buildEventNames(layout);
+    }
+
     // ------------------------------------------------------------------------
-    // IStateChangeInput
+    // ITmfStateProvider
     // ------------------------------------------------------------------------
 
     @Override
@@ -139,20 +161,16 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     }
 
     @Override
+    public KernelVMStateProvider getNewInstance() {
+        return new KernelVMStateProvider(this.getTrace(), this.fLayout);
+    }
+    @Override
     public void assignTargetStateSystem(ITmfStateSystemBuilder ssb) {
         /* We can only set up the locations once the state system is assigned */
         super.assignTargetStateSystem(ssb);
     }
-    private static int getNodeIO(ITmfStateSystemBuilder ssb) {
-        return ssb.getQuarkAbsoluteAndAdd(Attributes.IO);
-    }
     @Override
-    public KernelStateProvider getNewInstance() {
-        return new KernelStateProvider(this.getTrace(), fLayout);
-    }
-
-    @Override
-    protected void eventHandle(@Nullable ITmfEvent event) {
+    protected void eventHandle(@Nullable ITmfEvent event)  {
         if (event == null) {
             return;
         }
@@ -189,39 +207,27 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
              */
             Integer idx = fEventNames.get(eventName);
             int intval = (idx == null ? -1 : idx.intValue());
-
             switch (intval) {
             case SUBMIT_IO:{
                 final int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeIO(ss), String.valueOf(thread));
-                quark = ss.getQuarkRelativeAndAdd(currentThreadIO, "ValueIO"); //$NON-NLS-1$
-
+                quark = ss.getQuarkRelativeAndAdd(currentThreadIO, Attributes.IO );
                 value = ss.queryOngoingState(quark);
                 int valueIO = value.isNull() ? 0 : value.unboxInt();
                 valueIO++;
                 value = TmfStateValue.newValueInt(valueIO);
                 ss.modifyAttribute(ts, value, quark);
-                if (valueIO > 0) {
-                    quark = ss.getQuarkRelativeAndAdd(currentThreadIO, "STATUS" ); //$NON-NLS-1$
-                    value = StateValues.IO_STATUS_SUBMITED_VALUE;
-                    ss.modifyAttribute(ts, value, quark);
-                }
+
+
             }
             break;
             case COMPLETE_IO:{
                 final int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeIO(ss), String.valueOf(thread));
-                quark = ss.getQuarkRelativeAndAdd(currentThreadIO, "ValueIO" ); //$NON-NLS-1$
+                quark = ss.getQuarkRelativeAndAdd(currentThreadIO, Attributes.IO );
                 value = ss.queryOngoingState(quark);
                 int valueIO = value.isNull() ? 0 : value.unboxInt();
                 valueIO--;
                 value = TmfStateValue.newValueInt(valueIO);
                 ss.modifyAttribute(ts, value, quark);
-                if (valueIO == 0){
-                    quark = ss.getQuarkRelativeAndAdd(currentThreadIO, "STATUS" ); //$NON-NLS-1$
-                    value = StateValues.IO_STATUS_IDLE_VALUE;
-                            //TmfStateValue.newValueInt(0);
-                            //
-                    ss.modifyAttribute(ts, value, quark);
-                }
             }
 
             break;
@@ -245,7 +251,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 value = StateValues.CPU_STATUS_IRQ_VALUE;
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             case IRQ_HANDLER_EXIT_INDEX:
             {
@@ -262,7 +268,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 /* Set the CPU status back to running or "idle" */
                 cpuExitInterrupt(ss, ts, currentCPUNode, currentThreadNode);
             }
-            break;
+                break;
 
             case SOFT_IRQ_ENTRY_INDEX:
             {
@@ -284,7 +290,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 value = StateValues.CPU_STATUS_SOFTIRQ_VALUE;
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             case SOFT_IRQ_EXIT_INDEX:
             {
@@ -301,10 +307,10 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 /* Set the CPU status back to "busy" or "idle" */
                 cpuExitInterrupt(ss, ts, currentCPUNode, currentThreadNode);
             }
-            break;
+                break;
 
             case SOFT_IRQ_RAISE_INDEX:
-                /* Fields: int32 vec */
+            /* Fields: int32 vec */
             {
                 Integer softIrqId = ((Long) event.getContent().getField(fLayout.fieldVec()).getValue()).intValue();
 
@@ -314,7 +320,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 value = StateValues.SOFT_IRQ_RAISED_VALUE;
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             case SCHED_SWITCH_INDEX:
             {
@@ -386,7 +392,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(currentCPUNode, Attributes.STATUS);
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             case SCHED_PI_SETPRIO_INDEX:
             {
@@ -401,7 +407,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 value = TmfStateValue.newValueInt(prio);
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             case SCHED_PROCESS_FORK_INDEX:
             {
@@ -444,7 +450,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(childTidNode, Attributes.SYSTEM_CALL);
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             case SCHED_PROCESS_EXIT_INDEX:
                 break;
@@ -459,7 +465,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), tid.toString());
                 ss.removeAttribute(ts, quark);
             }
-            break;
+                break;
 
             case STATEDUMP_PROCESS_STATE_INDEX:
                 /* LTTng-specific */
@@ -520,7 +526,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     ss.modifyAttribute(ts, value, quark);
                 }
             }
-            break;
+                break;
 
             case SCHED_WAKEUP_INDEX:
             {
@@ -537,7 +543,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 int status = ss.queryOngoingState(quark).unboxInt();
 
                 if (status != StateValues.PROCESS_STATUS_RUN_SYSCALL &&
-                        status != StateValues.PROCESS_STATUS_RUN_USERMODE) {
+                    status != StateValues.PROCESS_STATUS_RUN_USERMODE) {
                     value = StateValues.PROCESS_STATUS_WAIT_FOR_CPU_VALUE;
                     ss.modifyAttribute(ts, value, quark);
                 }
@@ -550,19 +556,17 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 value = TmfStateValue.newValueInt(prio);
                 ss.modifyAttribute(ts, value, quark);
             }
-            break;
+                break;
 
             default:
-                /* Other event types not covered by the main switch */
+            /* Other event types not covered by the main switch */
             {
-
                 if (eventName.startsWith(fLayout.eventSyscallEntryPrefix())
                         || eventName.startsWith(fLayout.eventCompatSyscallEntryPrefix())) {
+
                     /* Assign the new system call to the process */
                     quark = ss.getQuarkRelativeAndAdd(currentThreadNode, Attributes.SYSTEM_CALL);
-                    String nameOfSyscall = (String) eventName.subSequence(14, eventName.length());
-                    value = TmfStateValue.newValueString(nameOfSyscall);
-
+                    value = TmfStateValue.newValueString(eventName);
                     ss.modifyAttribute(ts, value, quark);
 
                     /* Put the process in system call mode */
@@ -594,7 +598,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 }
 
             }
-            break;
+                break;
             } // End of big switch
 
         } catch (AttributeNotFoundException ae) {
@@ -620,64 +624,26 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
              */
             sve.printStackTrace();
         }
+
     }
 
-    // ------------------------------------------------------------------------
-    // Convenience methods for commonly-used attribute tree locations
-    // ------------------------------------------------------------------------
+
+
+
 
     private static int getNodeCPUs(ITmfStateSystemBuilder ssb) {
         return ssb.getQuarkAbsoluteAndAdd(Attributes.CPUS);
     }
-
     private static int getNodeThreads(ITmfStateSystemBuilder ssb) {
         return ssb.getQuarkAbsoluteAndAdd(Attributes.THREADS);
     }
-
-    private static int getNodeIRQs(ITmfStateSystemBuilder ssb) {
-        return ssb.getQuarkAbsoluteAndAdd(Attributes.RESOURCES, Attributes.IRQS);
+    private static int getNodeIO(ITmfStateSystemBuilder ssb) {
+        return ssb.getQuarkAbsoluteAndAdd(Attributes.IO);
     }
-
-    private static int getNodeSoftIRQs(ITmfStateSystemBuilder ssb) {
-        return ssb.getQuarkAbsoluteAndAdd(Attributes.RESOURCES, Attributes.SOFT_IRQS);
-    }
-
-    // ------------------------------------------------------------------------
-    // Advanced state-setting methods
-    // ------------------------------------------------------------------------
-
-    /**
-     * When we want to set a process back to a "running" state, first check
-     * its current System_call attribute. If there is a system call active, we
-     * put the process back in the syscall state. If not, we put it back in
-     * user mode state.
-     */
-    private static void setProcessToRunning(ITmfStateSystemBuilder ssb, long ts, int currentThreadNode)
-            throws AttributeNotFoundException, TimeRangeException,
-            StateValueTypeException {
-        int quark;
-        ITmfStateValue value;
-
-        quark = ssb.getQuarkRelativeAndAdd(currentThreadNode, Attributes.SYSTEM_CALL);
-        if (ssb.queryOngoingState(quark).isNull()) {
-            /* We were in user mode before the interruption */
-            value = StateValues.PROCESS_STATUS_RUN_USERMODE_VALUE;
-        } else {
-            /* We were previously in kernel mode */
-            value = StateValues.PROCESS_STATUS_RUN_SYSCALL_VALUE;
-        }
-        quark = ssb.getQuarkRelativeAndAdd(currentThreadNode, Attributes.STATUS);
-        ssb.modifyAttribute(ts, value, quark);
-    }
-
-    /**
-     * Similar logic as above, but to set the CPU's status when it's coming out
-     * of an interruption.
-     */
     private static void cpuExitInterrupt(ITmfStateSystemBuilder ssb, long ts,
             int currentCpuNode, int currentThreadNode)
-                    throws StateValueTypeException, AttributeNotFoundException,
-                    TimeRangeException {
+            throws StateValueTypeException, AttributeNotFoundException,
+            TimeRangeException {
         int quark;
         ITmfStateValue value;
 
@@ -699,4 +665,12 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         quark = ssb.getQuarkRelativeAndAdd(currentCpuNode, Attributes.STATUS);
         ssb.modifyAttribute(ts, value, quark);
     }
+    private static int getNodeSoftIRQs(ITmfStateSystemBuilder ssb) {
+        return ssb.getQuarkAbsoluteAndAdd(Attributes.RESOURCES, Attributes.SOFT_IRQS);
+    }
+
+    private static int getNodeIRQs(ITmfStateSystemBuilder ssb) {
+        return ssb.getQuarkAbsoluteAndAdd(Attributes.RESOURCES, Attributes.IRQS);
+    }
 }
+

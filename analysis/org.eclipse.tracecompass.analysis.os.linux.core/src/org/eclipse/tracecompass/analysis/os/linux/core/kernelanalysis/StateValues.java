@@ -38,6 +38,17 @@ public interface StateValues {
     ITmfStateValue CPU_STATUS_IRQ_VALUE = TmfStateValue.newValueInt(CPU_STATUS_IRQ);
     ITmfStateValue CPU_STATUS_SOFTIRQ_VALUE = TmfStateValue.newValueInt(CPU_STATUS_SOFTIRQ);
 
+    /* IO Status */
+
+    /**
+     * @since 2.0
+     */
+    int IO_STATUS_SUBMITED = 1;
+    int IO_STATUS_IDLE = 0;
+    ITmfStateValue IO_STATUS_IDLE_VALUE = TmfStateValue.newValueInt(IO_STATUS_IDLE);
+    ITmfStateValue IO_STATUS_SUBMITED_VALUE = TmfStateValue.newValueInt(IO_STATUS_SUBMITED);
+
+
     /* Process status */
     int PROCESS_STATUS_UNKNOWN = 0;
     int PROCESS_STATUS_WAIT_BLOCKED = 1;

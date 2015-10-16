@@ -26,7 +26,10 @@ package org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis;
  */
 @SuppressWarnings({"nls", "javadoc"})
 public interface Attributes {
-
+    /**
+     * @since 2.0
+     */
+    String IO = "IO";
     /* First-level attributes */
     String CPUS = "CPUs";
     String THREADS = "Threads";

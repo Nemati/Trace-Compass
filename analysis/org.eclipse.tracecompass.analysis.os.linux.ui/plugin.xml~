@@ -4,7 +4,7 @@
    <extension
          point="org.eclipse.ui.views">
       <view
-            allowMultiple="true"
+            allowMultiple="false"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.analysis.os.linux.ui.views.controlflow.ControlFlowView"
             icon="icons/eview16/control_flow_view.gif"
@@ -58,7 +58,7 @@
       </output>
 	<output
             class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
-            id="org.eclipse.tracecompass.analysis.os.linux.views.qemuView">
+            id="org.eclipse.tracecompass.analysis.os.linux.views.controlflow">
          <analysisModuleClass
                class="org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.KernelAnalysisModule">
          </analysisModuleClass>

@@ -46,6 +46,7 @@ public final class KernelTidAspect extends LinuxTidAspect {
         /* Find the analysis module for the trace */
         KernelAnalysisModule analysis = TmfTraceUtils.getAnalysisModuleOfClass(event.getTrace(),
                 KernelAnalysisModule.class, KernelAnalysisModule.ID);
+
         if (analysis == null) {
             return null;
         }

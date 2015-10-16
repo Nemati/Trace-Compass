@@ -41,6 +41,9 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String SCHED_SWITCH = "sched_switch"; //$NON-NLS-1$
     private static final String SCHED_PI_SETPRIO = "sched_pi_setprio"; //$NON-NLS-1$
 
+    private static final String SUBMIT_IO = "qemu:thread_pool_submit"; //$NON-NLS-1$
+    private static final String COMPLETE_IO =  "qemu:thread_pool_complete"; //$NON-NLS-1$
+
     private static final Collection<String> SCHED_WAKEUP_EVENTS =
             checkNotNull(ImmutableList.of("sched_wakeup", "sched_wakeup_new")); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -49,9 +52,9 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String SCHED_PROCESS_FREE = "sched_process_free"; //$NON-NLS-1$
     private static final String STATEDUMP_PROCESS_STATE = "lttng_statedump_process_state"; //$NON-NLS-1$
 
-    private static final String SYSCALL_ENTRY_PREFIX = "sys_"; //$NON-NLS-1$
+    private static final String SYSCALL_ENTRY_PREFIX = "syscall_entry"; //$NON-NLS-1$
     private static final String COMPAT_SYSCALL_ENTRY_PREFIX = "compat_sys_"; //$NON-NLS-1$
-    private static final String SYSCALL_EXIT_PREFIX = "exit_syscall"; //$NON-NLS-1$
+    private static final String SYSCALL_EXIT_PREFIX = "syscall_exit"; //$NON-NLS-1$
 
     /* Field names */
     private static final String IRQ = "irq"; //$NON-NLS-1$
@@ -83,6 +86,7 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     // ------------------------------------------------------------------------
     // Event names
     // ------------------------------------------------------------------------
+
 
     @Override
     public String eventIrqHandlerEntry() {
@@ -161,7 +165,24 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     public String eventSyscallExitPrefix() {
         return SYSCALL_EXIT_PREFIX;
     }
-
+    //Submit IO
+    /**
+     * @return submit_io
+     * @since 2.0
+     */
+    @Override
+    public String eventSubmitIO() {
+        return SUBMIT_IO;
+    }
+    // completed IO
+    /**
+     * @return complete_io
+     * @since 2.0
+     */
+    @Override
+    public String eventCompleteIO() {
+        return COMPLETE_IO;
+    }
     // ------------------------------------------------------------------------
     // Event field names
     // ------------------------------------------------------------------------

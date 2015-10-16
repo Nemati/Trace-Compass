@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<component id="org.eclipse.tracecompass.analysis.os.linux.core" version="2">
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/kernelanalysis/Attributes.java" type="org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes">
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/kernelanalysis/StateValues.java" type="org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.StateValues">
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_STATUS_IDLE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_STATUS_IDLE_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_STATUS_SUBMITED"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_STATUS_SUBMITED_VALUE"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/latency/LatencyAnalysis.java" type="org.eclipse.tracecompass.analysis.os.linux.core.latency.LatencyAnalysis">
+        <filter id="1108344834">
+            <message_arguments>
+                <message_argument value="1.1"/>
+                <message_argument value="2.0"/>
+                <message_argument value="org.eclipse.tracecompass.analysis.os.linux.core.latency.LatencyAnalysis"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/latency/LatencyAnalysisListener.java" type="org.eclipse.tracecompass.analysis.os.linux.core.latency.LatencyAnalysisListener">
+        <filter id="1108344834">
+            <message_arguments>
+                <message_argument value="1.1"/>
+                <message_argument value="2.0"/>
+                <message_argument value="org.eclipse.tracecompass.analysis.os.linux.core.latency.LatencyAnalysisListener"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/latency/SystemCall.java" type="org.eclipse.tracecompass.analysis.os.linux.core.latency.SystemCall">
+        <filter id="1108344834">
+            <message_arguments>
+                <message_argument value="1.1"/>
+                <message_argument value="2.0"/>
+                <message_argument value="org.eclipse.tracecompass.analysis.os.linux.core.latency.SystemCall"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/trace/DefaultEventLayout.java" type="org.eclipse.tracecompass.analysis.os.linux.core.trace.DefaultEventLayout">
+        <filter id="1141899266">
+            <message_arguments>
+                <message_argument value="1.1"/>
+                <message_argument value="2.0"/>
+                <message_argument value="eventCompleteIO()"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/trace/IKernelAnalysisEventLayout.java" type="org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelAnalysisEventLayout">
+        <filter id="1209008130">
+            <message_arguments>
+                <message_argument value="1.1"/>
+                <message_argument value="2.0"/>
+                <message_argument value="eventCompleteIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventCompleteIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventSubmitIO()"/>
+            </message_arguments>
+        </filter>
+    </resource>
+</component>

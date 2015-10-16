@@ -237,15 +237,21 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
 
     @Override
     protected void buildEventList(final ITmfTrace trace, final ITmfTrace parentTrace, final IProgressMonitor monitor) {
-        final ITmfStateSystem ssq = TmfStateSystemAnalysisModule.getStateSystem(trace, KernelAnalysisModule.ID);
-        if (ssq == null) {
+
+        final ITmfStateSystem ssq2 = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID);
+        System.out.println("hani");
+        if (trace.getName().equals("kernel")) { //$NON-NLS-1$
             return;
         }
+            if (ssq2 == null) {
+                return;
+            }
 
+        //System.out.println("111");
         final List<ControlFlowEntry> entryList = new ArrayList<>();
         final Map<Integer, ControlFlowEntry> entryMap = new HashMap<>();
 
-        long start = ssq.getStartTime();
+        long start = ssq2.getStartTime();
         setStartTime(Math.min(getStartTime(), start));
 
         boolean complete = false;
@@ -253,24 +259,24 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
             if (monitor.isCanceled()) {
                 return;
             }
-            complete = ssq.waitUntilBuilt(BUILD_UPDATE_TIMEOUT);
-            if (ssq.isCancelled()) {
+            complete = ssq2.waitUntilBuilt(BUILD_UPDATE_TIMEOUT);
+            if (ssq2.isCancelled()) {
                 return;
             }
-            long end = ssq.getCurrentEndTime();
+            long end = ssq2.getCurrentEndTime();
             if (start == end && !complete) { // when complete execute one last time regardless of end time
                 continue;
             }
-            final long resolution = Math.max(1, (end - ssq.getStartTime()) / getDisplayWidth());
+            final long resolution = Math.max(1, (end - ssq2.getStartTime()) / getDisplayWidth());
             setEndTime(Math.max(getEndTime(), end + 1));
-            final List<Integer> threadQuarks = ssq.getQuarks(Attributes.THREADS, "*"); //$NON-NLS-1$
+            final List<Integer> threadQuarks = ssq2.getQuarks(Attributes.THREADS, "*"); //$NON-NLS-1$
             final long qStart = start;
             final long qEnd = end;
-            queryFullStates(ssq, qStart, qEnd, resolution, monitor, new IQueryHandler() {
+            queryFullStates(ssq2, qStart, qEnd, resolution, monitor, new IQueryHandler() {
                 @Override
                 public void handle(List<List<ITmfStateInterval>> fullStates, List<ITmfStateInterval> prevFullState) {
                     for (int threadQuark : threadQuarks) {
-                        String threadName = ssq.getAttributeName(threadQuark);
+                        String threadName = ssq2.getAttributeName(threadQuark);
                         int threadId = -1;
                         try {
                             threadId = Integer.parseInt(threadName);
@@ -284,8 +290,8 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
                         int execNameQuark;
                         int ppidQuark;
                         try {
-                            execNameQuark = ssq.getQuarkRelative(threadQuark, Attributes.EXEC_NAME);
-                            ppidQuark = ssq.getQuarkRelative(threadQuark, Attributes.PPID);
+                            execNameQuark = ssq2.getQuarkRelative(threadQuark, Attributes.EXEC_NAME);
+                            ppidQuark = ssq2.getQuarkRelative(threadQuark, Attributes.PPID);
                         } catch (AttributeNotFoundException e) {
                             /* No information on this thread (yet?), skip it for now */
                             continue;
@@ -316,8 +322,8 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
                                  * full states, try to use it.
                                  */
                                 try {
-                                    execNameInterval = ssq.querySingleState(startTime - 1, execNameQuark);
-                                    ppidInterval = ssq.querySingleState(startTime - 1, ppidQuark);
+                                    execNameInterval = ssq2.querySingleState(startTime - 1, execNameQuark);
+                                    ppidInterval = ssq2.querySingleState(startTime - 1, ppidQuark);
                                     startTime = execNameInterval.getStartTime();
                                     endTime = execNameInterval.getEndTime() + 1;
                                 } catch (AttributeNotFoundException e) {
@@ -325,9 +331,9 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
                                 } catch (StateSystemDisposedException e) {
                                     /* ignored */
                                 }
-                            }
+                            } // && execNameInterval.getStateValue().unboxStr().equals("qemu-system-x86")
                             if (!execNameInterval.getStateValue().isNull() &&
-                                    execNameInterval.getStateValue().getType() == ITmfStateValue.Type.STRING) {
+                                    execNameInterval.getStateValue().getType() == ITmfStateValue.Type.STRING ) {
                                 String execName = execNameInterval.getStateValue().unboxStr();
                                 int ppid = ppidInterval.getStateValue().unboxInt();
                                 ControlFlowEntry entry = entryMap.get(threadId);
@@ -354,13 +360,13 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
                             lastPpidStartTime = ppidInterval.getStartTime();
                         }
                     }
-                    updateTree(entryList, parentTrace, ssq);
+                    updateTree(entryList, parentTrace, ssq2);
 
-                    for (final TimeGraphEntry entry : getEntryList(ssq)) {
+                    for (final TimeGraphEntry entry : getEntryList(ssq2)) {
                         if (monitor.isCanceled()) {
                             return;
                         }
-                        buildStatusEvents(trace, parentTrace, ssq, fullStates, prevFullState, (ControlFlowEntry) entry, monitor, qStart, qEnd);
+                        buildStatusEvents(trace, parentTrace, ssq2, fullStates, prevFullState, (ControlFlowEntry) entry, monitor, qStart, qEnd);
                     }
                 }
             });

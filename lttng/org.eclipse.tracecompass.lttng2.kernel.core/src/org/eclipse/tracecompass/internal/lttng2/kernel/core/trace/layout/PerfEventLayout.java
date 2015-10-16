@@ -44,7 +44,19 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
     // ------------------------------------------------------------------------
     // Event names
     // ------------------------------------------------------------------------
-
+    @Override
+    public String eventSubmitIO() {
+        return "qemu:thread_pool_submit"; //$NON-NLS-1$
+    }
+    // completed IO
+    /**
+     * @return complete_io
+     * @since 2.0
+     */
+    @Override
+    public String eventCompleteIO() {
+        return "qemu:thread_pool_complete"; //$NON-NLS-1$
+    }
     @Override
     public String eventIrqHandlerEntry() {
         return "irq:irq_handler_exit"; //$NON-NLS-1$

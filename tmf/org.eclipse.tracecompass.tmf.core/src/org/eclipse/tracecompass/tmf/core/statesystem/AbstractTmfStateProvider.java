@@ -196,10 +196,13 @@ public abstract class AbstractTmfStateProvider implements ITmfStateProvider {
                 if (event == EMPTY_QUEUE_EVENT) {
                     /* Synchronization event, should be ignored */
                     event = checkNotNull(fEventsQueue.take());
+
                     continue;
                 }
                 currentEvent = event;
                 eventHandle(event);
+
+
                 event = checkNotNull(fEventsQueue.take());
             }
             /* We've received the last event, clean up */

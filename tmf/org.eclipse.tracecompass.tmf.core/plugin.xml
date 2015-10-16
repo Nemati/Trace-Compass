@@ -25,7 +25,7 @@
                class="org.eclipse.tracecompass.tmf.core.trace.TmfTrace">
          </tracetype>
          <tracetype
-               applies="false"
+               applies="true"
                class="org.eclipse.tracecompass.tmf.core.trace.experiment.TmfExperiment">
          </tracetype>
       </module>

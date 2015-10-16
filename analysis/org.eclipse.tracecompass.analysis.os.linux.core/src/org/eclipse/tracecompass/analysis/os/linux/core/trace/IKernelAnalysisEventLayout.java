@@ -64,7 +64,11 @@ public interface IKernelAnalysisEventLayout {
     String eventSyscallEntryPrefix();
     String eventCompatSyscallEntryPrefix();
     String eventSyscallExitPrefix();
-
+    /**
+     * @since 1.1
+     */
+    String eventCompleteIO();
+    String eventSubmitIO();
     // ------------------------------------------------------------------------
     // Event field names
     // ------------------------------------------------------------------------

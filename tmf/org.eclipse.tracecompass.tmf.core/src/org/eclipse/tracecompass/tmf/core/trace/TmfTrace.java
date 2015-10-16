@@ -286,7 +286,6 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace, IT
      */
     protected IStatus executeAnalysis() {
         MultiStatus status = new MultiStatus(Activator.PLUGIN_ID, IStatus.OK, null, null);
-
         Multimap<String, IAnalysisModuleHelper> modules = TmfAnalysisManager.getAnalysisModules();
         for (IAnalysisModuleHelper helper : modules.values()) {
             try {

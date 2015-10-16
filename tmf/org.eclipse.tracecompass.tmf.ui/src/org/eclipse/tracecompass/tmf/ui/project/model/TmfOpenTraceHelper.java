@@ -261,6 +261,7 @@ public class TmfOpenTraceHelper {
 
     private static ITmfTrace openExperimentElement(final TmfExperimentElement experimentElement) {
         /* Experiment element now has an experiment type associated with it */
+        //System.out.println("experiment");
         final TmfExperiment experiment = experimentElement.instantiateTrace();
         if (experiment == null) {
             TraceUtils.displayErrorMsg(NLS.bind(Messages.TmfOpenTraceHelper_OpenElement, experimentElement.getTypeName()),

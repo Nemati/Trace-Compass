@@ -96,6 +96,7 @@ public class QemuKvmVmModel implements IVirtualMachineModel {
          */
         /* Try to get the virtual machine from the event */
         String eventName = event.getName();
+
         if (eventName.startsWith(KVM)) {
             /* Only the host machine has kvm_* events, so this is a host */
             machine = VirtualMachine.newHostMachine(hostId);

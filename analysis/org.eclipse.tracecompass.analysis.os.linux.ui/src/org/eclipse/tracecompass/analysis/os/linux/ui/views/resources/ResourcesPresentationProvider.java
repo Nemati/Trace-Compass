@@ -71,8 +71,8 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         SOFT_IRQ         (new RGB(200, 150, 100)),
         IRQ_ACTIVE       (new RGB(200,   0, 100)),
         SOFT_IRQ_RAISED  (new RGB(200, 200,   0)),
-        SOFT_IRQ_ACTIVE  (new RGB(200, 150, 100));
-
+        SOFT_IRQ_ACTIVE  (new RGB(200, 150, 100)),
+        SUBMITED_IO      (new RGB (51,0,0));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -115,6 +115,13 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return State.SOFT_IRQ_RAISED;
                 }
                 return State.SOFT_IRQ_ACTIVE;
+            }
+            else if (entry.getType() == Type.IO) {
+                if (value == StateValues.IO_STATUS_IDLE) {
+                    return State.IDLE;
+                } else if (value == StateValues.IO_STATUS_SUBMITED) {
+                    return State.SUBMITED_IO;
+                }
             }
         }
         return null;
@@ -169,6 +176,18 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 if (ss == null) {
                     return retMap;
                 }
+                // Check for IO
+                if (entry.getType().equals(Type.IO)) {
+
+                    // Get CPU of IRQ or SoftIRQ and provide it for the tooltip display
+                    int cpu = tcEvent.getValue();
+                    if (cpu >= 0) {
+                        retMap.put(Messages.ResourcesView_attributeCpuName, String.valueOf(cpu));
+                    }
+                }
+
+
+
                 // Check for IRQ or Soft_IRQ type
                 if (entry.getType().equals(Type.IRQ) || entry.getType().equals(Type.SOFT_IRQ)) {
 
