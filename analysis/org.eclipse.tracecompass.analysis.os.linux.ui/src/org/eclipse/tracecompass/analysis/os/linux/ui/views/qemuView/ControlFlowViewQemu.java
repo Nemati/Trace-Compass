@@ -246,7 +246,7 @@ public class ControlFlowViewQemu extends AbstractStateSystemTimeGraphView {
 protected void buildEventList(final ITmfTrace trace, final ITmfTrace parentTrace, final IProgressMonitor monitor) {
 
     final ITmfStateSystem ssq = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID); //$NON-NLS-1$
-
+System.out.println("hani");
     if (trace.getName().equals("kernel")) { //$NON-NLS-1$
         return;
     }
