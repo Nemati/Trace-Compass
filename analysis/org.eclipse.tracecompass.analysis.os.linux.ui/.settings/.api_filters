@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<component id="org.eclipse.tracecompass.analysis.os.linux.ui" version="2">
+    <resource path="src/org/eclipse/tracecompass/analysis/os/linux/ui/views/resources/ResourcesEntry.java" type="org.eclipse.tracecompass.analysis.os.linux.ui.views.resources.ResourcesEntry$Type">
+        <filter id="1177550852">
+            <message_arguments>
+                <message_argument value="CPUQemu"/>
+            </message_arguments>
+        </filter>
+    </resource>
+</component>

@@ -37,17 +37,41 @@ public interface StateValues {
     ITmfStateValue CPU_STATUS_RUN_SYSCALL_VALUE = TmfStateValue.newValueInt(CPU_STATUS_RUN_SYSCALL);
     ITmfStateValue CPU_STATUS_IRQ_VALUE = TmfStateValue.newValueInt(CPU_STATUS_IRQ);
     ITmfStateValue CPU_STATUS_SOFTIRQ_VALUE = TmfStateValue.newValueInt(CPU_STATUS_SOFTIRQ);
+    /* NET status Qemu */
+    int NET_QEMU_RUN = 1;
+    int NET_QEMU_IDLE = 0;
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue NET_QEMU_BUSY_VALUE = TmfStateValue.newValueInt(NET_QEMU_RUN);
+    ITmfStateValue NET_QEMU_IDLE_VALUE = TmfStateValue.newValueInt(NET_QEMU_IDLE);
 
-    /* IO Status */
+/*CPU Status Qemu */
+
+    int CPU_QEMU_RUN = 1;
+    int CPU_QEMU_IDLE = 0;
+    ITmfStateValue CPU_QEMU_BUSY_VALUE = TmfStateValue.newValueInt(CPU_QEMU_RUN);
+    ITmfStateValue CPU_QEMU_IDLE_VALUE = TmfStateValue.newValueInt(CPU_QEMU_IDLE);
+
+    /* IO Status Qemu*/
 
     /**
      * @since 2.0
      */
     int IO_STATUS_SUBMITED = 1;
     int IO_STATUS_IDLE = 0;
+    /**
+     * @since 2.0
+     */
+    int IO_WRITE_QEMU = 2;
+    int IO_READ_QEMU = 3;
+    int IO_OTHER = 4;
+
     ITmfStateValue IO_STATUS_IDLE_VALUE = TmfStateValue.newValueInt(IO_STATUS_IDLE);
     ITmfStateValue IO_STATUS_SUBMITED_VALUE = TmfStateValue.newValueInt(IO_STATUS_SUBMITED);
-
+    ITmfStateValue IO_WRITE_QEMU_VALUE = TmfStateValue.newValueInt(IO_WRITE_QEMU);
+    ITmfStateValue IO_OTHER_VALUE = TmfStateValue.newValueInt(IO_OTHER);
+    ITmfStateValue IO_READ_QEMU_VALUE = TmfStateValue.newValueInt(IO_READ_QEMU);
 
     /* Process status */
     int PROCESS_STATUS_UNKNOWN = 0;

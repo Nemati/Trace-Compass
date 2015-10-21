@@ -129,7 +129,6 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
             }
             long endTime = end + 1;
             setEndTime(Math.max(getEndTime(), endTime));
-            //trace.getName()
             if (traceEntry == null) {
                 traceEntry = new ResourcesEntry(trace,"Qemu Resource View" , startTime, endTime, 0); //$NON-NLS-1$
                 traceEntry.sortChildren(comparator);
@@ -156,13 +155,39 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 int IOQ = Integer.parseInt(ssq.getAttributeName(IOQuark));
                 ResourcesEntry entry = entryMap.get(IOQuark);
                 if (entry == null) {
-                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IO, IOQ);
+                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ);
                     entryMap.put(IOQuark, entry);
                     traceEntry.addChild(entry);
                 } else {
                     entry.updateEndTime(endTime);
                 }
             }
+            List<Integer> CPUQemuQuarks = ssq.getQuarks(Attributes.CPUQemu, "*"); //$NON-NLS-1$
+            for (Integer CPUQemuQuark : CPUQemuQuarks) {
+                int CPUQ = Integer.parseInt(ssq.getAttributeName(CPUQemuQuark));
+                ResourcesEntry entry = entryMap.get(CPUQemuQuark);
+                if (entry == null) {
+                    entry = new ResourcesEntry(CPUQemuQuark, parentTrace, startTime, endTime, Type.CPUQemu, CPUQ);
+                    entryMap.put(CPUQemuQuark, entry);
+                    traceEntry.addChild(entry);
+                } else {
+                    entry.updateEndTime(endTime);
+                }
+            }
+            List<Integer> NetQemuQuarks = ssq.getQuarks(Attributes.NetQemu, "*"); //$NON-NLS-1$
+            for (Integer NetQemuQuark : NetQemuQuarks) {
+                int NetQ = Integer.parseInt(ssq.getAttributeName(NetQemuQuark));
+                ResourcesEntry entry = entryMap.get(NetQemuQuark);
+                if (entry == null) {
+                    entry = new ResourcesEntry(NetQemuQuark, parentTrace, startTime, endTime, Type.NetQemu, NetQ);
+                    entryMap.put(NetQemuQuark, entry);
+                    traceEntry.addChild(entry);
+                } else {
+                    entry.updateEndTime(endTime);
+                }
+            }
+
+
             List<Integer> irqQuarks = ssq.getQuarks(Attributes.RESOURCES, Attributes.IRQS, "*"); //$NON-NLS-1$
             for (Integer irqQuark : irqQuarks) {
                 int irq = Integer.parseInt(ssq.getAttributeName(irqQuark));
@@ -267,7 +292,91 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 lastStartTime = time;
                 lastEndTime = time + duration;
             }
-        } else if (resourcesEntry.getType().equals(Type.IO)) {
+        } else if (resourcesEntry.getType().equals(Type.IOQemu)) {
+            int statusQuark;
+            try {
+                statusQuark = ssq.getQuarkRelative(quark,"STATUS"); //$NON-NLS-1$
+            } catch (AttributeNotFoundException e) {
+                /*
+                 * The sub-attribute "status" is not available. May happen
+                 * if the trace does not have sched_switch events enabled.
+                 */
+                return null;
+            }
+            eventList = new ArrayList<>(fullStates.size());
+            ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
+            long lastStartTime = lastInterval == null ? -1 : lastInterval.getStartTime();
+            long lastEndTime = lastInterval == null ? -1 : lastInterval.getEndTime() + 1;
+            for (List<ITmfStateInterval> fullState : fullStates) {
+                if (monitor.isCanceled()) {
+                    return null;
+                }
+                if (statusQuark >= fullState.size()) {
+                    /* No information on this cpu (yet?), skip it for now */
+                    continue;
+                }
+                ITmfStateInterval statusInterval = fullState.get(statusQuark);
+                int status = statusInterval.getStateValue().unboxInt();
+                long time = statusInterval.getStartTime();
+                long duration = statusInterval.getEndTime() - time + 1;
+                if (time == lastStartTime) {
+                    continue;
+                }
+                if (!statusInterval.getStateValue().isNull()) {
+                    if (lastEndTime != time && lastEndTime != -1) {
+                        eventList.add(new TimeEvent(entry, lastEndTime, time - lastEndTime));
+                    }
+                    eventList.add(new TimeEvent(entry, time, duration, status));
+                } else {
+                    eventList.add(new NullTimeEvent(entry, time, duration));
+                }
+                lastStartTime = time;
+                lastEndTime = time + duration;
+            }
+        }
+        else if (resourcesEntry.getType().equals(Type.CPUQemu)) {
+            int statusQuark;
+            try {
+                statusQuark = ssq.getQuarkRelative(quark,"STATUS"); //$NON-NLS-1$
+            } catch (AttributeNotFoundException e) {
+                /*
+                 * The sub-attribute "status" is not available. May happen
+                 * if the trace does not have sched_switch events enabled.
+                 */
+                return null;
+            }
+            eventList = new ArrayList<>(fullStates.size());
+            ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
+            long lastStartTime = lastInterval == null ? -1 : lastInterval.getStartTime();
+            long lastEndTime = lastInterval == null ? -1 : lastInterval.getEndTime() + 1;
+            for (List<ITmfStateInterval> fullState : fullStates) {
+                if (monitor.isCanceled()) {
+                    return null;
+                }
+                if (statusQuark >= fullState.size()) {
+                    /* No information on this cpu (yet?), skip it for now */
+                    continue;
+                }
+                ITmfStateInterval statusInterval = fullState.get(statusQuark);
+                int status = statusInterval.getStateValue().unboxInt();
+                long time = statusInterval.getStartTime();
+                long duration = statusInterval.getEndTime() - time + 1;
+                if (time == lastStartTime) {
+                    continue;
+                }
+                if (!statusInterval.getStateValue().isNull()) {
+                    if (lastEndTime != time && lastEndTime != -1) {
+                        eventList.add(new TimeEvent(entry, lastEndTime, time - lastEndTime));
+                    }
+                    eventList.add(new TimeEvent(entry, time, duration, status));
+                } else {
+                    eventList.add(new NullTimeEvent(entry, time, duration));
+                }
+                lastStartTime = time;
+                lastEndTime = time + duration;
+            }
+        }
+        else if (resourcesEntry.getType().equals(Type.NetQemu)) {
             int statusQuark;
             try {
                 statusQuark = ssq.getQuarkRelative(quark,"STATUS"); //$NON-NLS-1$

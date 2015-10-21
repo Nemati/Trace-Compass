@@ -3,11 +3,61 @@
     <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/kernelanalysis/Attributes.java" type="org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes">
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="CPUQemu"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="IO"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="NetQemu"/>
             </message_arguments>
         </filter>
     </resource>
     <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/kernelanalysis/StateValues.java" type="org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.StateValues">
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_BUSY_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_IDLE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_IDLE_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_RUN"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_OTHER"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_OTHER_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_READ_QEMU"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_READ_QEMU_VALUE"/>
+            </message_arguments>
+        </filter>
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="IO_STATUS_IDLE"/>
@@ -26,6 +76,26 @@
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="IO_STATUS_SUBMITED_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="IO_WRITE_QEMU_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="NET_QEMU_IDLE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="NET_QEMU_IDLE_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="NET_QEMU_RUN"/>
             </message_arguments>
         </filter>
     </resource>
@@ -64,6 +134,21 @@
                 <message_argument value="eventCompleteIO()"/>
             </message_arguments>
         </filter>
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="eventInfoIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="eventNetDev()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="eventNetIf()"/>
+            </message_arguments>
+        </filter>
     </resource>
     <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/trace/IKernelAnalysisEventLayout.java" type="org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelAnalysisEventLayout">
         <filter id="1209008130">
@@ -73,9 +158,31 @@
                 <message_argument value="eventCompleteIO()"/>
             </message_arguments>
         </filter>
+        <filter id="1209008130">
+            <message_arguments>
+                <message_argument value="1.1"/>
+                <message_argument value="2.0"/>
+                <message_argument value="eventInfoIO()"/>
+            </message_arguments>
+        </filter>
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="eventCompleteIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventNetDev()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventNetIf()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventSchedSwitchQemuEntery()"/>
             </message_arguments>
         </filter>
         <filter id="1211105284">

@@ -58,6 +58,20 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
         return "qemu:thread_pool_complete"; //$NON-NLS-1$
     }
     @Override
+    public String eventNetIf() {
+        return "netif_rx"; //$NON-NLS-1$
+    }
+    @Override
+    public String eventNetDev() {
+        return "net_dev_xmit"; //$NON-NLS-1$
+    }
+
+    @Override
+    public String eventInfoIO() {
+        return "qemu:bdrv_co_io_em"; //$NON-NLS-1$
+    }
+
+    @Override
     public String eventIrqHandlerEntry() {
         return "irq:irq_handler_exit"; //$NON-NLS-1$
     }

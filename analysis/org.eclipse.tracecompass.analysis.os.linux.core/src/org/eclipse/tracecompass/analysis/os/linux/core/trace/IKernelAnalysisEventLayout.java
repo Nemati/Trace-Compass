@@ -67,8 +67,11 @@ public interface IKernelAnalysisEventLayout {
     /**
      * @since 1.1
      */
+    String eventInfoIO();
     String eventCompleteIO();
     String eventSubmitIO();
+    String eventNetIf();
+    String eventNetDev();
     // ------------------------------------------------------------------------
     // Event field names
     // ------------------------------------------------------------------------

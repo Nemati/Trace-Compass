@@ -72,7 +72,12 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         IRQ_ACTIVE       (new RGB(200,   0, 100)),
         SOFT_IRQ_RAISED  (new RGB(200, 200,   0)),
         SOFT_IRQ_ACTIVE  (new RGB(200, 150, 100)),
-        SUBMITED_IO      (new RGB (51,0,0));
+        SUBMITED_IO      (new RGB (51,0,0)),
+        READ_IO_QEMU     (new RGB (0,0,204)),
+        WRITE_IO_QEMU    (new RGB (204,0,0)),
+        OTHER_IO_QEMU    (new RGB (0,51,25)),
+        CPU_Qemu_Busy (new RGB (178,34,34)),
+        Net_Qemu_Busy (new RGB (255,20,147));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -116,11 +121,30 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 }
                 return State.SOFT_IRQ_ACTIVE;
             }
-            else if (entry.getType() == Type.IO) {
+            else if (entry.getType() == Type.IOQemu) {
                 if (value == StateValues.IO_STATUS_IDLE) {
                     return State.IDLE;
-                } else if (value == StateValues.IO_STATUS_SUBMITED) {
-                    return State.SUBMITED_IO;
+                } else if (value == StateValues.IO_WRITE_QEMU) {
+                    return State.WRITE_IO_QEMU;
+                } else if (value == StateValues.IO_READ_QEMU) {
+                    return State.READ_IO_QEMU;
+                }
+                else if (value == StateValues.IO_OTHER) {
+                    return State.OTHER_IO_QEMU;
+                }
+            }
+            else if (entry.getType() == Type.CPUQemu) {
+                if (value == StateValues.CPU_QEMU_IDLE) {
+                    return State.IDLE;
+                } else if (value == StateValues.CPU_QEMU_RUN) {
+                    return State.CPU_Qemu_Busy;
+                }
+            }
+            else if (entry.getType() == Type.NetQemu) {
+                if (value == StateValues.NET_QEMU_IDLE) {
+                    return State.IDLE;
+                } else if (value == StateValues.NET_QEMU_RUN) {
+                    return State.Net_Qemu_Busy;
                 }
             }
         }
@@ -177,16 +201,88 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return retMap;
                 }
                 // Check for IO
-                if (entry.getType().equals(Type.IO)) {
+                if (entry.getType().equals(Type.IOQemu)) {
 
-                    // Get CPU of IRQ or SoftIRQ and provide it for the tooltip display
-                    int cpu = tcEvent.getValue();
-                    if (cpu >= 0) {
-                        retMap.put(Messages.ResourcesView_attributeCpuName, String.valueOf(cpu));
+
+                    int status = tcEvent.getValue();
+
+                    try {
+                        int IOQuark = entry.getQuark();
+                        if (status == StateValues.IO_WRITE_QEMU){
+                            int currentThreadQuark = ss.getQuarkRelative(IOQuark, "write"); //$NON-NLS-1$
+                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                            if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("Write",value.toString()); //$NON-NLS-1$
+                           }
+                        }
+                        if (status == StateValues.IO_READ_QEMU){
+                            int currentThreadQuark = ss.getQuarkRelative(IOQuark, "read"); //$NON-NLS-1$
+                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                            if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("Read",value.toString()); //$NON-NLS-1$
+                           }
+                        }
+                        int currentThreadQuark = ss.getQuarkRelative(IOQuark, "ValueIO");//$NON-NLS-1$
+
+                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                            if (!interval.getStateValue().isNull()) {
+                                ITmfStateValue value = interval.getStateValue();
+                                retMap.put("# Submited",value.toString());  //$NON-NLS-1$
+                            }
+                            //$NON-NLS-2$
+
+                    } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
+                        Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
+                    } catch (StateSystemDisposedException e) {
+                        /* Ignored */
+                    }
+                }
+                // Check for CPU Qemu
+                if (entry.getType().equals(Type.CPUQemu)) {
+                    int CPUQuark = entry.getQuark();
+                    try {
+                        int currentThreadQuark = ss.getQuarkRelative(CPUQuark, "ValueCPU"); //$NON-NLS-1$
+                        ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                        if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("# Used CPU",value.toString());  //$NON-NLS-1$
+                        }
+                    }
+                    catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
+                        Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
+                    } catch (StateSystemDisposedException e) {
+                        /* Ignored */
                     }
                 }
 
 
+             // Check for Net Qemu
+                if (entry.getType().equals(Type.NetQemu)) {
+                    int NetQuark = entry.getQuark();
+                    try {
+                        int currentThreadQuark = ss.getQuarkRelative(NetQuark, "Netif"); //$NON-NLS-1$
+                        ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                        if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("RX",value.toString());  //$NON-NLS-1$
+                        }
+                        currentThreadQuark = ss.getQuarkRelative(NetQuark, "Netdev"); //$NON-NLS-1$
+                        interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                        if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("TX",value.toString());  //$NON-NLS-1$
+                        }
+
+
+                    }
+                    catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
+                        Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
+                    } catch (StateSystemDisposedException e) {
+                        /* Ignored */
+                    }
+                }
 
                 // Check for IRQ or Soft_IRQ type
                 if (entry.getType().equals(Type.IRQ) || entry.getType().equals(Type.SOFT_IRQ)) {

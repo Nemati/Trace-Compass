@@ -44,6 +44,10 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     private static final String SCHED_PI_SETPRIO = "sched_pi_setprio";
     private static final String SUBMIT_IO = "qemu:thread_pool_submit"; //$NON-NLS-1$
     private static final String COMPLETE_IO =  "qemu:thread_pool_complete"; //$NON-NLS-1$
+
+    private static final String INFO_IO = "qemu:bdrv_co_io_em"; //$NON-NLS-1$
+    private static final String NET_IF = "netif_rx"; //$NON-NLS-1$
+    private static final String NET_DEV = "net_dev_xmit"; //$NON-NLS-1$
     private static final Collection<String> SCHED_WAKEUP_EVENTS =
             checkNotNull(ImmutableList.of("sched_wakeup", "sched_wakeup_new"));
 
@@ -184,6 +188,19 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     @Override
     public String eventCompleteIO() {
         return COMPLETE_IO;
+    }
+
+    @Override
+    public String eventInfoIO() {
+        return INFO_IO;
+    }
+    @Override
+    public String eventNetIf() {
+        return NET_IF;
+    }
+    @Override
+    public String eventNetDev() {
+        return NET_DEV;
     }
     // ------------------------------------------------------------------------
     // Event field names

@@ -29,7 +29,15 @@ public interface Attributes {
     /**
      * @since 2.0
      */
-    String IO = "IO";
+    String IO = "DiskQemu";
+    /**
+     * @since 2.0
+     */
+    String CPUQemu = "CPUQemu";
+    /**
+     * @since 2.0
+     */
+    String NetQemu = "NetQemu";
     /* First-level attributes */
     String CPUS = "CPUs";
     String THREADS = "Threads";
