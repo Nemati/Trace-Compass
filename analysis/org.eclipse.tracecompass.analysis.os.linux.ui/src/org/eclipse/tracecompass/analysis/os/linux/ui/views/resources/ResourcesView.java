@@ -19,6 +19,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Iterator;
+
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -28,7 +31,9 @@ import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.KernelAnal
 import org.eclipse.tracecompass.analysis.os.linux.ui.views.resources.ResourcesEntry.Type;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
+import org.eclipse.tracecompass.statesystem.core.StateSystemUtils;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
+import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
@@ -38,19 +43,22 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.NullTimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
-
+import java.lang.Math;
 /**
  * Main implementation for the LTTng 2.0 kernel Resource view
  *
  * @author Patrick Tasse
  */
 public class ResourcesView extends AbstractStateSystemTimeGraphView {
+    private static Map<String,String> namePIDmap = new HashMap<>() ;
 
     /** View ID. */
     public static final String ID = "org.eclipse.tracecompass.analysis.os.linux.views.resources"; //$NON-NLS-1$
 
     private static final String[] FILTER_COLUMN_NAMES = new String[] {
             Messages.ResourcesView_stateTypeName
+
+
     };
 
     // Timeout between updates in the build thread in ms
@@ -93,7 +101,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
     }
 
     @Override
-    protected void buildEventList(ITmfTrace trace, ITmfTrace parentTrace, final IProgressMonitor monitor) {
+    protected void buildEventList(ITmfTrace trace, ITmfTrace parentTrace, final IProgressMonitor monitor)  {
         final ITmfStateSystem ssq = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID);
         if (trace.getName().equals("kernel")) { //$NON-NLS-1$
             return;
@@ -101,6 +109,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
         if (ssq == null) {
             return;
         }
+
         Comparator<ITimeGraphEntry> comparator = new Comparator<ITimeGraphEntry>() {
             @Override
             public int compare(ITimeGraphEntry o1, ITimeGraphEntry o2) {
@@ -124,6 +133,36 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 return;
             }
             long end = ssq.getCurrentEndTime();
+
+            try {
+                //int quark = ssq.getQuarkAbsolute("vmName"); //$NON-NLS-1$
+                List<Integer> vmQuarks = ssq.getQuarks("vmName", "*"); //$NON-NLS-1$ //$NON-NLS-2$
+                for (Integer vmQuark : vmQuarks) {
+                    List<ITmfStateInterval> intervals = StateSystemUtils.queryHistoryRange(ssq, vmQuark, start, end);
+                    Iterator<ITmfStateInterval> iterator = intervals.iterator();
+                    while (iterator.hasNext()) {
+                        String vmName = (ssq.getAttributeName(vmQuark));
+                        String tidVM = iterator.next().getStateValue().toString();
+                        if (!tidVM.equals("nullValue")){ //$NON-NLS-1$
+                        namePIDmap.put(tidVM, vmName);
+                        }
+                    }
+
+                }
+
+            }
+
+            catch (StateSystemDisposedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            catch (AttributeNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+
             if (start == end && !complete) { // when complete execute one last time regardless of end time
                 continue;
             }
@@ -155,7 +194,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 int IOQ = Integer.parseInt(ssq.getAttributeName(IOQuark));
                 ResourcesEntry entry = entryMap.get(IOQuark);
                 if (entry == null) {
-                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ);
+                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ, "IO "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
                     entryMap.put(IOQuark, entry);
                     traceEntry.addChild(entry);
                 } else {
@@ -165,9 +204,11 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
             List<Integer> CPUQemuQuarks = ssq.getQuarks(Attributes.CPUQemu, "*"); //$NON-NLS-1$
             for (Integer CPUQemuQuark : CPUQemuQuarks) {
                 int CPUQ = Integer.parseInt(ssq.getAttributeName(CPUQemuQuark));
+
                 ResourcesEntry entry = entryMap.get(CPUQemuQuark);
+
                 if (entry == null) {
-                    entry = new ResourcesEntry(CPUQemuQuark, parentTrace, startTime, endTime, Type.CPUQemu, CPUQ);
+                    entry = new ResourcesEntry(CPUQemuQuark, parentTrace, startTime, endTime, Type.CPUQemu, CPUQ, "CPU "+ namePIDmap.get(String.valueOf(CPUQ))); //$NON-NLS-1$
                     entryMap.put(CPUQemuQuark, entry);
                     traceEntry.addChild(entry);
                 } else {
@@ -175,19 +216,27 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 }
             }
             List<Integer> NetQemuQuarks = ssq.getQuarks(Attributes.NetQemu, "*"); //$NON-NLS-1$
+            //int counter = 1;
             for (Integer NetQemuQuark : NetQemuQuarks) {
                 int NetQ = Integer.parseInt(ssq.getAttributeName(NetQemuQuark));
                 ResourcesEntry entry = entryMap.get(NetQemuQuark);
                 if (entry == null) {
-                    entry = new ResourcesEntry(NetQemuQuark, parentTrace, startTime, endTime, Type.NetQemu, NetQ);
+                    String Name = "Unknown"; //$NON-NLS-1$
+                    Set<String> test =  namePIDmap.keySet();
+                    Iterator<String> iterator = test.iterator();
+                    while (iterator.hasNext()){
+                        int tidOfVM = Integer.valueOf(iterator.next());
+                        if (Math.abs(Integer.valueOf(NetQ)-tidOfVM)<25){
+                            Name = String.valueOf(tidOfVM);
+                        }
+                    }
+                    entry = new ResourcesEntry(NetQemuQuark, parentTrace, startTime, endTime, Type.NetQemu, NetQ, "Net "+ namePIDmap.get(Name)); //$NON-NLS-1$
                     entryMap.put(NetQemuQuark, entry);
                     traceEntry.addChild(entry);
                 } else {
                     entry.updateEndTime(endTime);
                 }
             }
-
-
             List<Integer> irqQuarks = ssq.getQuarks(Attributes.RESOURCES, Attributes.IRQS, "*"); //$NON-NLS-1$
             for (Integer irqQuark : irqQuarks) {
                 int irq = Integer.parseInt(ssq.getAttributeName(irqQuark));
@@ -244,6 +293,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
         }
     }
 
+
     @Override
     protected @Nullable List<ITimeEvent> getEventList(@NonNull TimeGraphEntry entry, ITmfStateSystem ssq,
             @NonNull List<List<ITmfStateInterval>> fullStates, @Nullable List<ITmfStateInterval> prevFullState, @NonNull IProgressMonitor monitor) {
@@ -278,6 +328,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 int status = statusInterval.getStateValue().unboxInt();
                 long time = statusInterval.getStartTime();
                 long duration = statusInterval.getEndTime() - time + 1;
+
                 if (time == lastStartTime) {
                     continue;
                 }
@@ -319,6 +370,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 int status = statusInterval.getStateValue().unboxInt();
                 long time = statusInterval.getStartTime();
                 long duration = statusInterval.getEndTime() - time + 1;
+                duration += 0;
                 if (time == lastStartTime) {
                     continue;
                 }

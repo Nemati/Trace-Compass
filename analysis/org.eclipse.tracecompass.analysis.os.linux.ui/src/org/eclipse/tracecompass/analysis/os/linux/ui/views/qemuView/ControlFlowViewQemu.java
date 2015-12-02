@@ -339,12 +339,14 @@ protected void buildEventList(final ITmfTrace trace, final ITmfTrace parentTrace
                                 ppidInterval = ssq.querySingleState(startTime - 1, ppidQuark);
                                 startTime = execNameInterval.getStartTime();
                                 endTime = execNameInterval.getEndTime() + 1;
+
                             } catch (AttributeNotFoundException e) {
                                 Activator.getDefault().logError(e.getMessage());
                             } catch (StateSystemDisposedException e) {
                                 /* ignored */
                             }
                         }//qemu-system-x86
+
                         if ((!execNameInterval.getStateValue().isNull() &&
                                 execNameInterval.getStateValue().getType() == ITmfStateValue.Type.STRING) &&
                                 (execNameInterval.getStateValue().unboxStr().equals("qemu-system-x86")||execNameInterval.getStateValue().unboxStr().contains("vhost") )) {

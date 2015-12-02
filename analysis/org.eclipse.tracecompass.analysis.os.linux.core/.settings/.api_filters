@@ -40,6 +40,26 @@
         </filter>
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="CPU_STATUS_VMX_RUNNING"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_STATUS_VMX_RUNNING_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_STATUS_VM_RUNNING"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_STATUS_VM_RUNNING_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="IO_OTHER"/>
             </message_arguments>
         </filter>
@@ -98,6 +118,16 @@
                 <message_argument value="NET_QEMU_RUN"/>
             </message_arguments>
         </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="PREEMPTED"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="PREEMPTED_VALUE"/>
+            </message_arguments>
+        </filter>
     </resource>
     <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/latency/LatencyAnalysis.java" type="org.eclipse.tracecompass.analysis.os.linux.core.latency.LatencyAnalysis">
         <filter id="1108344834">
@@ -127,16 +157,19 @@
         </filter>
     </resource>
     <resource path="src/org/eclipse/tracecompass/analysis/os/linux/core/trace/DefaultEventLayout.java" type="org.eclipse.tracecompass.analysis.os.linux.core.trace.DefaultEventLayout">
-        <filter id="1141899266">
+        <filter id="1143996420">
             <message_arguments>
-                <message_argument value="1.1"/>
-                <message_argument value="2.0"/>
-                <message_argument value="eventCompleteIO()"/>
+                <message_argument value="eventInfoIO()"/>
             </message_arguments>
         </filter>
         <filter id="1143996420">
             <message_arguments>
-                <message_argument value="eventInfoIO()"/>
+                <message_argument value="eventKVMEntry()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="eventKVMExit()"/>
             </message_arguments>
         </filter>
         <filter id="1143996420">
@@ -147,6 +180,16 @@
         <filter id="1143996420">
             <message_arguments>
                 <message_argument value="eventNetIf()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="eventStatedumpFileDescriptor()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="eventVCPUEnterGuest()"/>
             </message_arguments>
         </filter>
     </resource>
@@ -172,6 +215,16 @@
         </filter>
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="eventKVMEntry()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventKVMExit()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="eventNetDev()"/>
             </message_arguments>
         </filter>
@@ -187,7 +240,17 @@
         </filter>
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="eventStatedumpFileDescriptor()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="eventSubmitIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventVCPUEnterGuest()"/>
             </message_arguments>
         </filter>
     </resource>

@@ -17,7 +17,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
-
 /**
  * An entry, or row, in the resource view
  *
@@ -125,8 +124,31 @@ public class ResourcesEntry extends TimeGraphEntry implements Comparable<ITimeGr
      */
     public ResourcesEntry(int quark, @NonNull ITmfTrace trace,
             long startTime, long endTime, Type type, int id) {
-        this(quark, trace, type.toString() + " " + id, startTime, endTime, type, id); //$NON-NLS-1$
+        //this(quark, trace, type.toString() + " " + id, startTime, endTime, type, id); //$NON-NLS-1$
+        //this(quark, trace, type.toString() + " " + id, startTime, endTime, type, id); //$NON-NLS-1$
+         //  this(quark, trace, KernelStateProvider.vmNameMap.get(id) , startTime, endTime, type, id); //$NON-NLS-1$
+
+      //  } else {
+            this(quark, trace, type.toString() + " " + id, startTime, endTime, type, id); //$NON-NLS-1$
+        //}
     }
+
+    /**
+     * @param quark
+     * @param trace
+     * @param startTime
+     * @param endTime
+     * @param type
+     * @param id
+     * @param Name
+     * @since 1.1
+     */
+    public ResourcesEntry(int quark, @NonNull ITmfTrace trace,
+            long startTime, long endTime, Type type, int id, String Name) {
+            this(quark, trace, Name , startTime, endTime, type, id); //$NON-NLS-1$
+
+    }
+
 
     /**
      * Get the entry's id

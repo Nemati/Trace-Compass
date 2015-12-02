@@ -31,7 +31,18 @@ public interface StateValues {
     int CPU_STATUS_RUN_SYSCALL = 2;
     int CPU_STATUS_IRQ = 3;
     int CPU_STATUS_SOFTIRQ = 4;
-
+    int CPU_STATUS_VM_RUNNING = 5;
+    int CPU_STATUS_VMX_RUNNING = 6;
+    /**
+     * @since 2.0
+     */
+    int PREEMPTED = 7;
+    ITmfStateValue CPU_STATUS_VM_RUNNING_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VM_RUNNING);
+    ITmfStateValue CPU_STATUS_VMX_RUNNING_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_RUNNING);
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue  PREEMPTED_VALUE = TmfStateValue.newValueInt( PREEMPTED);
     ITmfStateValue CPU_STATUS_IDLE_VALUE = TmfStateValue.newValueInt(CPU_STATUS_IDLE);
     ITmfStateValue CPU_STATUS_RUN_USERMODE_VALUE = TmfStateValue.newValueInt(CPU_STATUS_RUN_USERMODE);
     ITmfStateValue CPU_STATUS_RUN_SYSCALL_VALUE = TmfStateValue.newValueInt(CPU_STATUS_RUN_SYSCALL);

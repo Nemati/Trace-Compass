@@ -31,13 +31,22 @@
             restorable="true">
       </view>
       <view
-            allowMultiple="false"
+            allowMultiple="true"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.analysis.os.linux.ui.views.cpuusage.CpuUsageView"
             id="org.eclipse.tracecompass.analysis.os.linux.views.cpuusage"
             name="%cpuusage.view.name"
             restorable="true">
       </view>
+            <view
+            allowMultiple="true"
+            category="org.eclipse.linuxtools.lttng2.ui.views.category"
+            class="org.eclipse.tracecompass.analysis.os.linux.ui.views.qemucpuusage.CpuUsageView"
+            id="org.eclipse.tracecompass.analysis.os.linux.views.qemucpuusage"
+            name="%qemucpuusage.view.name"
+            restorable="true">
+      </view>
+            
       <view
             allowMultiple="false"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
@@ -77,6 +86,14 @@
                class="org.eclipse.tracecompass.analysis.os.linux.core.cpuusage.KernelCpuUsageAnalysis">
          </analysisModuleClass>
       </output>
+       <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.os.linux.views.qemucpuusage">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.analysis.os.linux.core.cpuusage.KernelCpuUsageAnalysis">
+         </analysisModuleClass>
+      </output>
+
       <output
             class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
             id="org.eclipse.tracecompass.analysis.os.linux.views.latency">

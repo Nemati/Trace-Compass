@@ -41,11 +41,14 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String SCHED_SWITCH = "sched_switch"; //$NON-NLS-1$
     private static final String SCHED_PI_SETPRIO = "sched_pi_setprio"; //$NON-NLS-1$
     private static final String INFO_IO = "qemu:bdrv_co_io_em"; //$NON-NLS-1$
-    private static final String NET_IF = "netif_rx"; //$NON-NLS-1$
+    private static final String NET_IF = "net_if_rx"; //$NON-NLS-1$
     private static final String NET_DEV =  "net_dev_xmit"; //$NON-NLS-1$
     private static final String SUBMIT_IO = "qemu:thread_pool_submit"; //$NON-NLS-1$
     //private static final String MODIFY_IO = "qemu:bdrv_co_io_em"; //$NON-NLS-1$
     private static final String COMPLETE_IO =  "qemu:thread_pool_complete"; //$NON-NLS-1$
+    private static final String KVM_ENTRY =  "kvm_entry"; //$NON-NLS-1$
+    private static final String KVM_EXIT =  "kvm_exit"; //$NON-NLS-1$
+    private static final String VCPU_ENTER_GUEST =  "addons_vcpu_enter_guest"; //$NON-NLS-1$
 
     private static final Collection<String> SCHED_WAKEUP_EVENTS =
             checkNotNull(ImmutableList.of("sched_wakeup", "sched_wakeup_new")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -54,7 +57,7 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String SCHED_PROCESS_EXIT = "sched_process_exit"; //$NON-NLS-1$
     private static final String SCHED_PROCESS_FREE = "sched_process_free"; //$NON-NLS-1$
     private static final String STATEDUMP_PROCESS_STATE = "lttng_statedump_process_state"; //$NON-NLS-1$
-
+    private static final String STATEDUMP_FILE_DESCRIPTOR = "lttng_statedump_file_descriptor"; //$NON-NLS-1$
     private static final String SYSCALL_ENTRY_PREFIX = "syscall_entry"; //$NON-NLS-1$
     private static final String COMPAT_SYSCALL_ENTRY_PREFIX = "compat_sys_"; //$NON-NLS-1$
     private static final String SYSCALL_EXIT_PREFIX = "syscall_exit"; //$NON-NLS-1$
@@ -153,6 +156,10 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     public @NonNull String eventStatedumpProcessState() {
         return STATEDUMP_PROCESS_STATE;
     }
+    @Override
+    public @NonNull String eventStatedumpFileDescriptor() {
+        return STATEDUMP_FILE_DESCRIPTOR;
+    }
 
     @Override
     public String eventSyscallEntryPrefix() {
@@ -177,6 +184,22 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     public String eventSubmitIO() {
         return SUBMIT_IO;
     }
+
+    @Override
+    public String eventKVMEntry() {
+        return KVM_ENTRY;
+    }
+
+    @Override
+    public String eventKVMExit() {
+        return KVM_EXIT;
+    }
+    @Override
+    public String eventVCPUEnterGuest() {
+        return VCPU_ENTER_GUEST;
+    }
+
+
     // completed IO
     /**
      * @return complete_io

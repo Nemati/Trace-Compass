@@ -54,12 +54,25 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
      * @since 2.0
      */
     @Override
+    public String eventKVMEntry() {
+        return "kvm_entry"; //$NON-NLS-1$
+    }
+    @Override
+    public String eventKVMExit() {
+        return "kvm_exit"; //$NON-NLS-1$
+    }
+    @Override
+    public String eventVCPUEnterGuest() {
+        return "addons_vcpu_enter_guest"; //$NON-NLS-1$
+    }
+
+    @Override
     public String eventCompleteIO() {
         return "qemu:thread_pool_complete"; //$NON-NLS-1$
     }
     @Override
     public String eventNetIf() {
-        return "netif_rx"; //$NON-NLS-1$
+        return "net_if_rx"; //$NON-NLS-1$
     }
     @Override
     public String eventNetDev() {
@@ -134,7 +147,11 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
         /* Not present in perf traces */
         return null;
     }
-
+    @Override
+    public @Nullable String eventStatedumpFileDescriptor() {
+        /* Not present in perf traces */
+        return null;
+    }
     @Override
     public String eventSyscallEntryPrefix() {
         return "raw_syscalls:sys_enter"; //$NON-NLS-1$

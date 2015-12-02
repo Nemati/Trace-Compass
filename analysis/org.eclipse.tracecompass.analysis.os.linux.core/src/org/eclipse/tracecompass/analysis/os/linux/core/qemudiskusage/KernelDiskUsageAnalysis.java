@@ -10,7 +10,7 @@
  *   Geneviève Bastien - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.tracecompass.analysis.os.linux.core.vm;
+package org.eclipse.tracecompass.analysis.os.linux.core.qemudiskusage;
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.eclipse.tracecompass.analysis.os.linux.core.cpuusage.KernelCpuUsageStateProvider;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.KernelAnalysisModule;
 import org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelAnalysisEventLayout;
@@ -32,6 +33,8 @@ import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedE
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateValueTypeException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.TimeRangeException;
 import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
+//import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
+//import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.statesystem.ITmfStateProvider;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
@@ -43,11 +46,12 @@ import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
  * It requires the LTTng Kernel analysis module to have accurate CPU usage data.
  *
  * @author Geneviève Bastien
+ * @since 2.0
  */
-public class KernelVMAnalysis extends TmfStateSystemAnalysisModule {
+public class KernelDiskUsageAnalysis extends TmfStateSystemAnalysisModule {
 
     /** The ID of this analysis */
-    public static final String ID = "org.eclipse.tracecompass.analysis.os.linux.vm"; //$NON-NLS-1$
+    public static final String ID = "org.eclipse.tracecompass.analysis.os.linux.kernel"; //$NON-NLS-1$
 
     /** Text used to identify 'total' entries in the returned maps */
     public static final String TOTAL = "total"; //$NON-NLS-1$
@@ -68,7 +72,7 @@ public class KernelVMAnalysis extends TmfStateSystemAnalysisModule {
             layout = IKernelAnalysisEventLayout.DEFAULT_LAYOUT;
         }
 
-        return new KernelVMStateProvider(trace, layout);
+        return new KernelCpuUsageStateProvider(trace, layout);
     }
 
     @Override
@@ -106,50 +110,45 @@ public class KernelVMAnalysis extends TmfStateSystemAnalysisModule {
      *            End time of requested range
      * @return A map of TID -> time spent on CPU in the [start, end] interval
      */
-    public Map<String, Long> getCpuUsageInRange(long start, long end) {
+    public Map<String, Long> getDiskUsageInRange(long start, long end) {
         Map<String, Long> map = new HashMap<>();
         Map<String, Long> totalMap = new HashMap<>();
 
         ITmfTrace trace = getTrace();
-        ITmfStateSystem vm = getStateSystem();
-        if (trace == null || vm == null) {
+        ITmfStateSystem cpuSs = getStateSystem();
+        if (trace == null || cpuSs == null) {
             return map;
         }
-
+        System.out.println("hani");
         ITmfStateSystem kernelSs = TmfStateSystemAnalysisModule.getStateSystem(trace, KernelAnalysisModule.ID);
         if (kernelSs == null) {
             return map;
         }
-        //added by hani
-
         /*
          * Make sure the start/end times are within the state history, so we
          * don't get TimeRange exceptions.
          */
-        long startTime = Math.max(start, vm.getStartTime());
+        long startTime = Math.max(start, cpuSs.getStartTime());
         startTime = Math.max(startTime, kernelSs.getStartTime());
-
-        long endTime = Math.min(end, vm.getCurrentEndTime());
+        long endTime = Math.min(end, cpuSs.getCurrentEndTime());
         endTime = Math.min(endTime, kernelSs.getCurrentEndTime());
-
         long totalTime = 0;
         if (endTime < startTime) {
             return map;
         }
-
         try {
             /* Get the list of quarks for each CPU and CPU's TIDs */
-            int cpusNode = vm.getQuarkAbsolute(Attributes.CPUS);
+            int cpusNode = cpuSs.getQuarkAbsolute(Attributes.CPUS);
             Map<Integer, List<Integer>> tidsPerCpu = new HashMap<>();
-            for (int cpuNode : vm.getSubAttributes(cpusNode, false)) {
-                tidsPerCpu.put(cpuNode, vm.getSubAttributes(cpuNode, false));
+            for (int cpuNode : cpuSs.getSubAttributes(cpusNode, false)) {
+                tidsPerCpu.put(cpuNode, cpuSs.getSubAttributes(cpuNode, false));
             }
 
             /* Query full states at start and end times */
             List<ITmfStateInterval> kernelEndState = kernelSs.queryFullState(endTime);
-            List<ITmfStateInterval> endState = vm.queryFullState(endTime);
+            List<ITmfStateInterval> endState = cpuSs.queryFullState(endTime);
             List<ITmfStateInterval> kernelStartState = kernelSs.queryFullState(startTime);
-            List<ITmfStateInterval> startState = vm.queryFullState(startTime);
+            List<ITmfStateInterval> startState = cpuSs.queryFullState(startTime);
 
             long countAtStart, countAtEnd;
 
@@ -157,17 +156,22 @@ public class KernelVMAnalysis extends TmfStateSystemAnalysisModule {
                 int cpuNode = entry.getKey();
                 List<Integer> tidNodes = entry.getValue();
 
-                String curCpuName = vm.getAttributeName(cpuNode);
+                String curCpuName = cpuSs.getAttributeName(cpuNode);
                 long cpuTotal = 0;
 
                 /* Get the quark of the thread running on this CPU */
                 int currentThreadQuark = kernelSs.getQuarkAbsolute(Attributes.CPUS, curCpuName, Attributes.CURRENT_THREAD);
+                //ITmfStateValue value = kernelSs.queryOngoingState(currentThreadQuark);
+                int currentIOQuark = kernelSs.getQuarkAbsolute("DiskQemu"); //$NON-NLS-1$
+                System.out.println(currentIOQuark);
                 /* Get the currently running thread on this CPU */
                 int startThread = kernelStartState.get(currentThreadQuark).getStateValue().unboxInt();
                 int endThread = kernelEndState.get(currentThreadQuark).getStateValue().unboxInt();
 
                 for (int tidNode : tidNodes) {
-                    String curTidName = vm.getAttributeName(tidNode);
+                    String curTidName = cpuSs.getAttributeName(tidNode);
+
+
                     int tid = Integer.parseInt(curTidName);
 
                     countAtEnd = endState.get(tidNode).getStateValue().unboxLong();

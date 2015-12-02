@@ -61,6 +61,10 @@ public interface IKernelAnalysisEventLayout {
     String eventSchedProcessExit();
     String eventSchedProcessFree();
     @Nullable String eventStatedumpProcessState();
+    /**
+     * @since 2.0
+     */
+    @Nullable String eventStatedumpFileDescriptor();
     String eventSyscallEntryPrefix();
     String eventCompatSyscallEntryPrefix();
     String eventSyscallExitPrefix();
@@ -72,6 +76,12 @@ public interface IKernelAnalysisEventLayout {
     String eventSubmitIO();
     String eventNetIf();
     String eventNetDev();
+    /**
+     * @since 2.0
+     */
+    String eventKVMEntry();
+    String eventKVMExit();
+    String eventVCPUEnterGuest();
     // ------------------------------------------------------------------------
     // Event field names
     // ------------------------------------------------------------------------

@@ -77,7 +77,9 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         WRITE_IO_QEMU    (new RGB (204,0,0)),
         OTHER_IO_QEMU    (new RGB (0,51,25)),
         CPU_Qemu_Busy (new RGB (178,34,34)),
-        Net_Qemu_Busy (new RGB (255,20,147));
+        Net_Qemu_Busy (new RGB (255,20,147)),
+        VM_Running (new RGB (139,69,19)),
+        VMX_Running (new RGB (218,165,32));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -112,6 +114,11 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return State.IRQ;
                 } else if (value == StateValues.CPU_STATUS_SOFTIRQ) {
                     return State.SOFT_IRQ;
+                }
+                else if (value == StateValues.CPU_STATUS_VM_RUNNING) {
+                    return State.VM_Running;
+                } else if (value == StateValues.CPU_STATUS_VMX_RUNNING) {
+                    return State.VMX_Running;
                 }
             } else if (entry.getType() == Type.IRQ) {
                 return State.IRQ_ACTIVE;
@@ -212,26 +219,26 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                             int currentThreadQuark = ss.getQuarkRelative(IOQuark, "write"); //$NON-NLS-1$
                             ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
                             if (!interval.getStateValue().isNull()) {
-                            ITmfStateValue value = interval.getStateValue();
-                            retMap.put("Write",value.toString()); //$NON-NLS-1$
-                           }
+                                ITmfStateValue value = interval.getStateValue();
+                                retMap.put("Write",value.toString()); //$NON-NLS-1$
+                            }
                         }
                         if (status == StateValues.IO_READ_QEMU){
                             int currentThreadQuark = ss.getQuarkRelative(IOQuark, "read"); //$NON-NLS-1$
                             ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
                             if (!interval.getStateValue().isNull()) {
-                            ITmfStateValue value = interval.getStateValue();
-                            retMap.put("Read",value.toString()); //$NON-NLS-1$
-                           }
+                                ITmfStateValue value = interval.getStateValue();
+                                retMap.put("Read",value.toString()); //$NON-NLS-1$
+                            }
                         }
                         int currentThreadQuark = ss.getQuarkRelative(IOQuark, "ValueIO");//$NON-NLS-1$
 
-                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
-                            if (!interval.getStateValue().isNull()) {
-                                ITmfStateValue value = interval.getStateValue();
-                                retMap.put("# Submited",value.toString());  //$NON-NLS-1$
-                            }
-                            //$NON-NLS-2$
+                        ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                        if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("# Submited",value.toString());  //$NON-NLS-1$
+                        }
+                        //$NON-NLS-2$
 
                     } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
                         Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
@@ -258,7 +265,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 }
 
 
-             // Check for Net Qemu
+                // Check for Net Qemu
                 if (entry.getType().equals(Type.NetQemu)) {
                     int NetQuark = entry.getQuark();
                     try {
@@ -377,6 +384,106 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                             /* Ignored */
                         }
                     }
+                    else if (status == StateValues.CPU_STATUS_VM_RUNNING || status == StateValues.CPU_STATUS_VMX_RUNNING) {
+                        // In running state get the current tid
+
+                        try {
+                            retMap.put(Messages.ResourcesView_attributeHoverTime, Utils.formatTime(hoverTime, TimeFormat.CALENDAR, Resolution.NANOSEC));
+                            int cpuQuark = entry.getQuark();
+                            int currentThreadQuark = ss.getQuarkRelative(cpuQuark, Attributes.CURRENT_THREAD);
+                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                            if (!interval.getStateValue().isNull()) {
+                                ITmfStateValue value = interval.getStateValue();
+                                int currentThreadId = value.unboxInt();
+                                retMap.put(Messages.ResourcesView_attributeTidName, Integer.toString(currentThreadId));
+                                int execNameQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), Attributes.EXEC_NAME);
+                                interval = ss.querySingleState(hoverTime, execNameQuark);
+                                if (!interval.getStateValue().isNull()) {
+                                    value = interval.getStateValue();
+                                    retMap.put(Messages.ResourcesView_attributeProcessName, value.unboxStr());
+                                }
+                                int vcpuQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "vcpu"); //$NON-NLS-1$
+                                interval = ss.querySingleState(hoverTime, vcpuQuark);
+                                value = interval.getStateValue();
+                                retMap.put("VCPU", value.unboxStr()); //$NON-NLS-1$
+                                if (status == StateValues.CPU_STATUS_VMX_RUNNING){
+                                    int exitQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "exit_reason"); //$NON-NLS-1$
+                                    interval = ss.querySingleState(hoverTime, exitQuark);
+                                    if (!interval.getStateValue().isNull()) {
+                                         value = interval.getStateValue();
+                                         int exit_reason = value.unboxInt();
+                                         switch (exit_reason){
+                                         case 0: {
+                                             retMap.put("Exit Reason","Exception or NMI");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 1: {
+                                             retMap.put("Exit Reason","External Intrupt");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 2: {
+                                             retMap.put("Exit Reason","Triple fault");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 3: {
+                                             retMap.put("Exit Reason","INIT signal");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 4: {
+                                             retMap.put("Exit Reason","start-up IPI");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 7: {
+                                             retMap.put("Exit Reason","Intrupt Window");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 9: {
+                                             retMap.put("Exit Reason","Task Switch");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 12: {
+                                             retMap.put("Exit Reason","HLT exiting");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 28: {
+                                             retMap.put("Exit Reason","Control-Register accesses");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 30: {
+                                             retMap.put("Exit Reason","I/O instruction");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 31: {
+                                             retMap.put("Exit Reason","RDMSR");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 32: {
+                                             retMap.put("Exit Reason","RWMSR");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         case 48: {
+                                             retMap.put("Exit Reason","EPT violation");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                         }
+                                         default : {
+                                             retMap.put("Exit Reason","Unkown");  //$NON-NLS-1$ //$NON-NLS-2$
+                                             break;
+                                           }
+                                         }
+                                    }
+
+                                }
+                            }
+
+                        } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
+                            Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
+                        } catch (StateSystemDisposedException e) {
+                            /* Ignored */
+                        }
+                    }
+
+
+
                 }
             }
         }

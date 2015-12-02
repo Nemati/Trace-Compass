@@ -32,6 +32,8 @@ import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedE
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateValueTypeException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.TimeRangeException;
 import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
+//import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
+//import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.statesystem.ITmfStateProvider;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
@@ -158,12 +160,17 @@ public class KernelCpuUsageAnalysis extends TmfStateSystemAnalysisModule {
 
                 /* Get the quark of the thread running on this CPU */
                 int currentThreadQuark = kernelSs.getQuarkAbsolute(Attributes.CPUS, curCpuName, Attributes.CURRENT_THREAD);
+                //ITmfStateValue value = kernelSs.queryOngoingState(currentThreadQuark);
+
+               // if ()
                 /* Get the currently running thread on this CPU */
                 int startThread = kernelStartState.get(currentThreadQuark).getStateValue().unboxInt();
                 int endThread = kernelEndState.get(currentThreadQuark).getStateValue().unboxInt();
 
                 for (int tidNode : tidNodes) {
                     String curTidName = cpuSs.getAttributeName(tidNode);
+
+
                     int tid = Integer.parseInt(curTidName);
 
                     countAtEnd = endState.get(tidNode).getStateValue().unboxLong();
