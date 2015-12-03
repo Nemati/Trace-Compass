@@ -405,7 +405,50 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                 int vcpuQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "vcpu"); //$NON-NLS-1$
                                 interval = ss.querySingleState(hoverTime, vcpuQuark);
                                 value = interval.getStateValue();
+                                Integer vcpu_id = Integer.valueOf(value.toString());
                                 retMap.put("VCPU", value.unboxStr()); //$NON-NLS-1$
+                               // int quarkVMname = ss.getQuarkAbsolute("vmName");
+                                Integer threadPTID = 0;
+                                int newCurrentThreadNodeTmp = 0;
+
+                                int currentThreadCPU = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), Attributes.PPID);
+                                interval = ss.querySingleState(hoverTime, currentThreadCPU);
+                                value = interval.getStateValue();
+
+                                Integer PTID = value.isNull() ? 0 : value.unboxInt();
+                                while (PTID != 1) {
+                                    newCurrentThreadNodeTmp = ss.getQuarkAbsolute(Attributes.THREADS,PTID.toString(),Attributes.PPID);
+                                    interval = ss.querySingleState(hoverTime, newCurrentThreadNodeTmp);
+                                    if (!interval.getStateValue().isNull()) {
+                                        value = interval.getStateValue();
+                                    }
+                                    threadPTID = PTID;
+                                    PTID = value.isNull() ? 0 : value.unboxInt();
+
+                                }
+                                int quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread");
+                                interval = ss.querySingleState(hoverTime, quarkThreadPTID);
+                                if (!interval.getStateValue().isNull()) {
+                                    value = interval.getStateValue();
+                                }
+                                retMap.put("T-ID-IN",value.toString());
+                                //quarkThreadPTID = ss.getQuarkAbsolute("vmName",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread");
+                                quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"threadName");
+                                interval = ss.querySingleState(hoverTime, quarkThreadPTID);
+                                if (!interval.getStateValue().isNull()) {
+                                    value = interval.getStateValue();
+                                }
+                                retMap.put("T-Name-IN",value.toString());
+                                quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"STATUS");
+                                interval = ss.querySingleState(hoverTime, quarkThreadPTID);
+                                if (!interval.getStateValue().isNull()) {
+                                    value = interval.getStateValue();
+                                }
+                                if (value.unboxInt()==2){
+                                retMap.put("T-State-IN","USERSPACE");
+                                } else  if (value.unboxInt()==3){
+                                    retMap.put("T-State-IN","SYSCALL");
+                                }
                                 if (status == StateValues.CPU_STATUS_VMX_RUNNING){
                                     int exitQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "exit_reason"); //$NON-NLS-1$
                                     interval = ss.querySingleState(hoverTime, exitQuark);

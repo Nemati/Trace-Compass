@@ -16,6 +16,7 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes;
@@ -83,6 +84,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     private static Map<Integer,Integer> netDev = new HashMap<>() ;
     private static Map<Integer,Long> netTs = new HashMap<>() ;
     public static Map<String,Map<Integer,stackData>> stackRange = new HashMap<>();
+    public static Map<Integer, String> TIDtoName = new HashMap<>();
     // ------------------------------------------------------------------------
     // Fields
     // ------------------------------------------------------------------------
@@ -112,6 +114,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         public Long start = (long) 0;
         public Long end = (long)0;
         public int tid = 0;
+        public String name = "null";
     }
 
     // ------------------------------------------------------------------------
@@ -225,13 +228,91 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
             switch (intval) {
             case VCPU_ENTER_GUEST:{
+                try {
                 ITmfEventField content = event.getContent();
                 Long  sptmp =  Long.valueOf((content.getField("sptmp").getValue()).toString()); //$NON-NLS-1$
+                int currentThreadCPU = 0;
                 if (sptmp > 0){
-                    //System.out.println(sptmp+" "+ts);
+                    currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
+                    quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
+                    value = ss.queryOngoingState(quark);
+                    Integer PTID = value.isNull() ? 0 : value.unboxInt();
+                    int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
+                    int threadPTID = thread;
+
+                    while (PTID != 1) {
+                        quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                        newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
+                        value = ss.queryOngoingState(quark);
+                        threadPTID = PTID;
+                        PTID = value.isNull() ? 0 : value.unboxInt();
+                    }
+                    String vmName = TIDtoName.get(threadPTID);
+                    Map<Integer, stackData> stackTIDtmps = new HashMap<>();
+                    stackTIDtmps = stackRange.get(vmName);
+
+
+                    for (Entry<Integer, stackData> entry : stackTIDtmps.entrySet())
+                    {
+                        if (sptmp > entry.getValue().start  && sptmp < entry.getValue().end) {
+                            currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeCPUQemu(ss), String.valueOf(threadPTID));
+                            int vCPUQuark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "vCPU"); //$NON-NLS-1$
+                            String vcpu_id = content.getField("vcpuID").getValue().toString(); //$NON-NLS-1$
+                            int vCPUID = ss.getQuarkRelativeAndAdd(vCPUQuark, vcpu_id);
+                            int statusQuark = ss.getQuarkRelativeAndAdd(vCPUID, "STATUS"); //$NON-NLS-1$
+                            value = TmfStateValue.newValueInt(StateValues.PROCESS_STATUS_RUN_USERMODE);
+                            ss.modifyAttribute(ts, value, statusQuark);
+                            int threadQuark = ss.getQuarkRelativeAndAdd(vCPUID, "thread"); //$NON-NLS-1$
+                            value = TmfStateValue.newValueInt(entry.getValue().tid);
+                            ss.modifyAttribute(ts, value, threadQuark);
+                            threadQuark = ss.getQuarkRelativeAndAdd(vCPUID, "threadName"); //$NON-NLS-1$
+                            value = TmfStateValue.newValueString(entry.getValue().name);
+                            ss.modifyAttribute(ts, value, threadQuark);
+
+                        }
+                    }
+                } else {
+                    currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
+                    quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
+                    value = ss.queryOngoingState(quark);
+                    Integer PTID = value.isNull() ? 0 : value.unboxInt();
+                    int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
+                    int threadPTID = thread;
+
+                    while (PTID != 1) {
+                        quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                        newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
+                        value = ss.queryOngoingState(quark);
+                        threadPTID = PTID;
+                        PTID = value.isNull() ? 0 : value.unboxInt();
+                    }
+                     currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeCPUQemu(ss), String.valueOf(threadPTID));
+                    int vCPUQuark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "vCPU"); //$NON-NLS-1$
+                    String vcpu_id = content.getField("vcpuID").getValue().toString(); //$NON-NLS-1$
+                    int vCPUID = ss.getQuarkRelativeAndAdd(vCPUQuark, vcpu_id);
+                    int statusQuark = ss.getQuarkRelativeAndAdd(vCPUID, "STATUS"); //$NON-NLS-1$
+                    value = TmfStateValue.newValueInt(StateValues.PROCESS_STATUS_RUN_SYSCALL);
+                    ss.modifyAttribute(ts, value, statusQuark);
+                }
+                break;
+                } catch (TimeRangeException tre) {
+                    /*
+                     * This would happen if the events in the trace aren't ordered
+                     * chronologically, which should never be the case ...
+                     */
+                    System.err.println("TimeRangeExcpetion caught in the state system's event manager."); //$NON-NLS-1$
+                    System.err.println("Are the events in the trace correctly ordered?"); //$NON-NLS-1$
+                    tre.printStackTrace();
+
+                } catch (StateValueTypeException sve) {
+                    /*
+                     * This would happen if we were trying to push/pop attributes not of
+                     * type integer. Which, once again, should never happen.
+                     */
+                    sve.printStackTrace();
+                } catch (Exception e){
 
                 }
-                //
                 break;
             }
             case KVM_ENTRY:{
@@ -274,7 +355,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
             case KVM_EXIT:{
                 ITmfEventField content = event.getContent();
                 final int reason = Integer.parseInt(content.getField("exit_reason").getValue().toString()); //$NON-NLS-1$
-
                 int currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
 
                 quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
@@ -297,8 +377,17 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(currentThreadNode, "vcpu"); //$NON-NLS-1$
                 int quarkExit = ss.getQuarkRelativeAndAdd(currentThreadNode, "exit_reason"); //$NON-NLS-1$
                 value = ss.queryOngoingState(quark);
-
                 String vcpu_id = value.toString();
+                int vcpuIDquark = ss.getQuarkRelativeAndAdd(vCPUQuark, vcpu_id);
+                int statusQuark = ss.getQuarkRelativeAndAdd(vcpuIDquark, "STATUS"); //$NON-NLS-1$
+                value = TmfStateValue.newValueInt(0);
+                ss.modifyAttribute(ts, value, statusQuark);
+                if (reason == 12){
+                    //int vcpuIDquark = ss.getQuarkRelativeAndAdd(vCPUQuark, vcpu_id);
+                    int threadQuark = ss.getQuarkRelativeAndAdd(vcpuIDquark, "thread"); //$NON-NLS-1$
+                    value = TmfStateValue.newValueInt(0);
+                    ss.modifyAttribute(ts, value, threadQuark);
+                }
                 value = TmfStateValue.newValueInt(reason);
                 ss.modifyAttribute(ts, value, quarkExit);
                 int vCPUID = ss.getQuarkRelativeAndAdd(vCPUQuark, vcpu_id);
@@ -888,7 +977,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(childTidNode, Attributes.STATUS);
                 value = StateValues.PROCESS_STATUS_WAIT_FOR_CPU_VALUE;
                 ss.modifyAttribute(ts, value, quark);
-
                 /* Set the process' syscall name, to be the same as the parent's */
                 quark = ss.getQuarkRelativeAndAdd(parentTidNode, Attributes.SYSTEM_CALL);
                 value = ss.queryOngoingState(quark);
@@ -929,6 +1017,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     int lenStart = "/var/lib/libvirt/images/".length(); //$NON-NLS-1$
                     int lenEnd = name.length() - 4;
                     String vmName = name.substring(lenStart, lenEnd);
+                    TIDtoName.put(pid, vmName);
                     int currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeCPUQemu(ss), String.valueOf(pid));
                     quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "vmName" ); //$NON-NLS-1$
                     value = TmfStateValue.newValueString(vmName);
@@ -948,7 +1037,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
             case STATEDUMP_PROCESS_STATE_INDEX:
                 /* LTTng-specific */
             {
-
                 ITmfEventField content = event.getContent();
                 int tid = ((Long) content.getField("tid").getValue()).intValue(); //$NON-NLS-1$
                 int pid = ((Long) content.getField("pid").getValue()).intValue(); //$NON-NLS-1$
@@ -965,13 +1053,13 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 stacktmp.start = stack_start;
                 stacktmp.end = stack_end ;
                 stacktmp.tid = tid;
+                stacktmp.name = name;
                 Map<Integer,stackData> stacktid = new HashMap<>();
                 stacktid.put(tid, stacktmp);
                 if (!stackRange.isEmpty()){
                   stacktid.putAll(stackRange.get(hostname));
                 }
                 stackRange.put(hostname, stacktid);
-
                 int quarkVMname = ss.getQuarkAbsoluteAndAdd("vmName"); //$NON-NLS-1$
                 int quarkHostname = ss.getQuarkRelativeAndAdd(quarkVMname, hostname);
                 int quarkthread = ss.getQuarkRelativeAndAdd(quarkHostname, String.valueOf(tid));
