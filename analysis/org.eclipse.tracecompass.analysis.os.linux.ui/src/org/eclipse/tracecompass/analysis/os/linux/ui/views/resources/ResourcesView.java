@@ -99,6 +99,22 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
     protected String getPrevTooltip() {
         return Messages.ResourcesView_previousResourceActionToolTipText;
     }
+    @Override
+    protected void rebuild() {
+        setStartTime(Long.MAX_VALUE);
+         setEndTime(Long.MIN_VALUE);
+         refresh();
+         ITmfTrace viewTrace = getTrace();
+         if (viewTrace == null) {
+             return;
+         }
+         synchronized (fBuildThreadMap) {
+             BuildThread buildThread = new BuildThread(viewTrace, viewTrace, getName());
+             fBuildThreadMap.put(viewTrace, buildThread);
+             buildThread.start();
+         }
+     }
+
 
     @Override
     protected void buildEventList(ITmfTrace trace, ITmfTrace parentTrace, final IProgressMonitor monitor)  {
@@ -194,9 +210,11 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 int IOQ = Integer.parseInt(ssq.getAttributeName(IOQuark));
                 ResourcesEntry entry = entryMap.get(IOQuark);
                 if (entry == null) {
+                    if (namePIDmap.get(String.valueOf(IOQ))!=null){
                     entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ, "IO "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
                     entryMap.put(IOQuark, entry);
                     traceEntry.addChild(entry);
+                    }
                 } else {
                     entry.updateEndTime(endTime);
                 }

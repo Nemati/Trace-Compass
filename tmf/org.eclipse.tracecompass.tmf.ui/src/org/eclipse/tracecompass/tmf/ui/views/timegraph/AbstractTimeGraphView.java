@@ -119,7 +119,7 @@ public abstract class AbstractTimeGraphView extends TmfView implements ITmfTimeA
     private final Map<ITmfTrace, ViewerFilter[]> fFiltersMap = new HashMap<>();
 
     /** The trace to build thread hash map */
-    private final Map<ITmfTrace, BuildThread> fBuildThreadMap = new HashMap<>();
+    protected final Map<ITmfTrace, BuildThread> fBuildThreadMap = new HashMap<>();
 
     /** The start time */
     private long fStartTime = SWT.DEFAULT;
@@ -464,7 +464,10 @@ public abstract class AbstractTimeGraphView extends TmfView implements ITmfTimeA
 
     }
 
-    private class BuildThread extends Thread {
+    /**
+     * @since 2.0
+     */
+    public class BuildThread extends Thread {
         private final @NonNull ITmfTrace fBuildTrace;
         private final @NonNull ITmfTrace fParentTrace;
         private final @NonNull IProgressMonitor fMonitor;

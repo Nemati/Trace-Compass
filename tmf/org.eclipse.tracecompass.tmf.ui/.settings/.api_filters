@@ -8,4 +8,18 @@
             </message_arguments>
         </filter>
     </resource>
+    <resource path="src/org/eclipse/tracecompass/tmf/ui/views/timegraph/AbstractTimeGraphView.java" type="org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractTimeGraphView">
+        <filter id="1194328068">
+            <message_arguments>
+                <message_argument value="fBuildThreadMap"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/tracecompass/tmf/ui/views/timegraph/AbstractTimeGraphView.java" type="org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractTimeGraphView$BuildThread">
+        <filter id="1143996420">
+            <message_arguments>
+                <message_argument value="org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractTimeGraphView.BuildThread"/>
+            </message_arguments>
+        </filter>
+    </resource>
 </component>

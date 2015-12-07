@@ -842,7 +842,29 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                         value = TmfStateValue.newValueInt(valueCPU);
                         ss.modifyAttribute(ts, value, quark);
                         quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "STATUS" ); //$NON-NLS-1$
-                        value = StateValues.CPU_QEMU_BUSY_VALUE;
+                        switch (valueCPU) {
+                        case 1:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_ONE;
+                            break;
+                            }
+                        case 2:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_TWO;
+                            break;
+                            }
+                        case 3:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_THREE;
+                            break;
+                            }
+                        case 4:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_FOUR;
+                            break;
+                            }
+                        default:
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_MANY;
+                            break;
+                        }
+
+
                         ss.modifyAttribute(ts, value, quark);
                     } else {
                         value = TmfStateValue.newValueInt(0);
@@ -896,7 +918,27 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     ss.modifyAttribute(ts, value, quark);
                     if (valueCPU > 0) {
                         quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "STATUS" ); //$NON-NLS-1$
-                        value = StateValues.CPU_QEMU_BUSY_VALUE;
+                        switch (valueCPU) {
+                        case 1:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_ONE;
+                            break;
+                            }
+                        case 2:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_TWO;
+                            break;
+                            }
+                        case 3:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_THREE;
+                            break;
+                            }
+                        case 4:{
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_FOUR;
+                            break;
+                            }
+                        default:
+                            value = StateValues.CPU_QEMU_BUSY_VALUE_MANY;
+                            break;
+                        }
                         ss.modifyAttribute(ts, value, quark);
                     }
 

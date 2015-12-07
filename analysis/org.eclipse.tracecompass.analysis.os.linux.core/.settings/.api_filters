@@ -25,6 +25,26 @@
         </filter>
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="CPU_QEMU_BUSY_VALUE_FOUR"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_BUSY_VALUE_MANY"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_BUSY_VALUE_TWO"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_BUSY_VALUE_one"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="CPU_QEMU_IDLE"/>
             </message_arguments>
         </filter>
@@ -36,6 +56,31 @@
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="CPU_QEMU_RUN"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_RUN_FOUR"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_RUN_MANY"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_RUN_ONE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_RUN_THREE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_QEMU_RUN_TWO"/>
             </message_arguments>
         </filter>
         <filter id="1211105284">

@@ -59,9 +59,26 @@ public interface StateValues {
 
 /*CPU Status Qemu */
 
-    int CPU_QEMU_RUN = 1;
+    int CPU_QEMU_RUN_ONE = 1;
+    int CPU_QEMU_RUN_TWO = 2;
+    int CPU_QEMU_RUN_THREE = 3;
+    int CPU_QEMU_RUN_FOUR = 4;
+    /**
+     * @since 2.0
+     */
+    int CPU_QEMU_RUN_MANY = 5;
     int CPU_QEMU_IDLE = 0;
-    ITmfStateValue CPU_QEMU_BUSY_VALUE = TmfStateValue.newValueInt(CPU_QEMU_RUN);
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue CPU_QEMU_BUSY_VALUE_ONE = TmfStateValue.newValueInt(CPU_QEMU_RUN_ONE);
+    ITmfStateValue CPU_QEMU_BUSY_VALUE_TWO = TmfStateValue.newValueInt(CPU_QEMU_RUN_TWO);
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue CPU_QEMU_BUSY_VALUE_THREE = TmfStateValue.newValueInt(CPU_QEMU_RUN_THREE);
+    ITmfStateValue CPU_QEMU_BUSY_VALUE_FOUR = TmfStateValue.newValueInt(CPU_QEMU_RUN_FOUR);
+    ITmfStateValue CPU_QEMU_BUSY_VALUE_MANY = TmfStateValue.newValueInt(CPU_QEMU_RUN_MANY);
     ITmfStateValue CPU_QEMU_IDLE_VALUE = TmfStateValue.newValueInt(CPU_QEMU_IDLE);
 
     /* IO Status Qemu*/
