@@ -538,6 +538,22 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                             retMap.put("Exit Reason","RWMSR");  //$NON-NLS-1$ //$NON-NLS-2$
                                             break;
                                         }
+                                        case 40: {
+                                            retMap.put("Exit Reason","PAUSE");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
+                                        case 41: {
+                                            retMap.put("Exit Reason","VM-Entry failure due to machine check");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
+                                        case 43: {
+                                            retMap.put("Exit Reason","TPR below threshold");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
+                                        case 44: {
+                                            retMap.put("Exit Reason","APIC access");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
                                         case 48: {
                                             retMap.put("Exit Reason","EPT violation");  //$NON-NLS-1$ //$NON-NLS-2$
                                             break;

@@ -211,7 +211,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 ResourcesEntry entry = entryMap.get(IOQuark);
                 if (entry == null) {
                     if (namePIDmap.get(String.valueOf(IOQ))!=null){
-                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ, "IO "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
+                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ, "Disk "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
                     entryMap.put(IOQuark, entry);
                     traceEntry.addChild(entry);
                     }

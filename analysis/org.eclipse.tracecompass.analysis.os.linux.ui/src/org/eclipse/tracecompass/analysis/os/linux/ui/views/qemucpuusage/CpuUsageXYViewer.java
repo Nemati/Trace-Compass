@@ -251,7 +251,6 @@ public class CpuUsageXYViewer extends TmfCommonXLineChartViewer {
         }
 
     }
-
     /**
      * Set the selected thread ID, which will be graphed in this viewer
      *
@@ -277,7 +276,6 @@ public class CpuUsageXYViewer extends TmfCommonXLineChartViewer {
         if (kernelSs == null) {
             return tid;
         }
-
         try {
             int cpusNode = kernelSs.getQuarkAbsolute(Attributes.THREADS);
 
@@ -298,9 +296,6 @@ public class CpuUsageXYViewer extends TmfCommonXLineChartViewer {
                         /* State system is closing down, no point continuing */
                         break;
                     }
-
-
-
                     for (ITmfStateInterval execNameInterval : execNameIntervals) {
                         if (!execNameInterval.getStateValue().isNull() &&
                                 execNameInterval.getStateValue().getType() == ITmfStateValue.Type.STRING) {
@@ -332,7 +327,6 @@ public class CpuUsageXYViewer extends TmfCommonXLineChartViewer {
         if (kernelSs == null) {
             return tid;
         }
-
         try {
             int cpusNode = kernelSs.getQuarkAbsolute(Attributes.THREADS);
 

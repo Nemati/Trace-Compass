@@ -240,15 +240,27 @@ public class ControlFlowViewQemu extends AbstractStateSystemTimeGraphView {
      * @return Hani Nemati
      */
 
-
+    @Override
+    protected void rebuild() {
+        setStartTime(Long.MAX_VALUE);
+         setEndTime(Long.MIN_VALUE);
+         refresh();
+         ITmfTrace viewTrace = getTrace();
+         if (viewTrace == null) {
+             return;
+         }
+         synchronized (fBuildThreadMap) {
+             BuildThread buildThread = new BuildThread(viewTrace, viewTrace, getName());
+             fBuildThreadMap.put(viewTrace, buildThread);
+             buildThread.start();
+         }
+     }
 
 @Override
 protected void buildEventList(final ITmfTrace trace, final ITmfTrace parentTrace, final IProgressMonitor monitor) {
 
     final ITmfStateSystem ssq = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID); //$NON-NLS-1$
-    if (trace.getName().equals("kernel")) { //$NON-NLS-1$
-        return;
-    }
+
 
     if (ssq == null) {
         return;
