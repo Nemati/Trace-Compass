@@ -31,14 +31,27 @@ public interface StateValues {
     int CPU_STATUS_RUN_SYSCALL = 2;
     int CPU_STATUS_IRQ = 3;
     int CPU_STATUS_SOFTIRQ = 4;
-    int CPU_STATUS_VM_RUNNING = 5;
-    int CPU_STATUS_VMX_RUNNING = 6;
     /**
      * @since 2.0
      */
+    int CPU_STATUS_VMX_NON_ROOT = 5;
+    int CPU_STATUS_VMX_ROOT = 6;
     int PREEMPTED = 7;
-    ITmfStateValue CPU_STATUS_VM_RUNNING_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VM_RUNNING);
-    ITmfStateValue CPU_STATUS_VMX_RUNNING_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_RUNNING);
+    /**
+     * @since 2.0
+     */
+    int VCPU_WAIT_FOR_PCPU = 8;
+    /**
+     * @since 2.0
+     */
+
+    ITmfStateValue CPU_STATUS_VMX_NON_ROOT_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_NON_ROOT);
+    ITmfStateValue CPU_STATUS_VMX_ROOT_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_ROOT);
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue VCPU_WAIT_FOR_PCPU_VALUE = TmfStateValue.newValueInt(VCPU_WAIT_FOR_PCPU);
+
     /**
      * @since 2.0
      */

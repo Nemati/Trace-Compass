@@ -82,8 +82,8 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         CPU_Qemu_Busy_FOUR (new RGB (100,0,0)),
         CPU_Qemu_Busy_MANY (new RGB (50,0,0)),
         Net_Qemu_Busy (new RGB (255,20,147)),
-        VM_Running (new RGB (139,69,19)),
-        VMX_Running (new RGB (218,165,32));
+        VMX_Non_Root (new RGB (139,69,19)),
+        VMX_Root (new RGB (218,165,32));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -119,10 +119,10 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 } else if (value == StateValues.CPU_STATUS_SOFTIRQ) {
                     return State.SOFT_IRQ;
                 }
-                else if (value == StateValues.CPU_STATUS_VM_RUNNING) {
-                    return State.VM_Running;
-                } else if (value == StateValues.CPU_STATUS_VMX_RUNNING) {
-                    return State.VMX_Running;
+                else if (value == StateValues.CPU_STATUS_VMX_NON_ROOT) {
+                    return State.VMX_Non_Root;
+                } else if (value == StateValues.CPU_STATUS_VMX_ROOT) {
+                    return State.VMX_Root;
                 }
             } else if (entry.getType() == Type.IRQ) {
                 return State.IRQ_ACTIVE;
@@ -400,7 +400,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                             /* Ignored */
                         }
                     }
-                    else if (status == StateValues.CPU_STATUS_VM_RUNNING || status == StateValues.CPU_STATUS_VMX_RUNNING) {
+                    else if (status == StateValues.CPU_STATUS_VMX_NON_ROOT || status == StateValues.CPU_STATUS_VMX_ROOT) {
                         // In running state get the current tid
 
                         try {
@@ -483,7 +483,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                 } else  if (value.unboxInt()==3){
                                     retMap.put("T-State-IN","SYSCALL"); //$NON-NLS-1$ //$NON-NLS-2$
                                 }
-                                if (status == StateValues.CPU_STATUS_VMX_RUNNING){
+                                if (status == StateValues.CPU_STATUS_VMX_ROOT){
                                     int exitQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "exit_reason"); //$NON-NLS-1$
                                     interval = ss.querySingleState(hoverTime, exitQuark);
                                     if (!interval.getStateValue().isNull()) {

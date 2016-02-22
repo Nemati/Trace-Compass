@@ -54,9 +54,9 @@ public class ControlFlowPresentationProviderQemu extends TimeGraphPresentationPr
         WAIT_BLOCKED   (new RGB(200, 200, 0)),
         WAIT_FOR_CPU   (new RGB(200, 100, 0)),
         USERMODE       (new RGB(0,   200, 0)),
-        SYSCALL        (new RGB(0,     0, 200)),
-        INTERRUPTED    (new RGB(200,   0, 100));
-
+        SYSCALL        (new RGB(0,   0, 200)),
+        INTERRUPTED    (new RGB(200, 0, 100)),
+        PREEMPTED      (new RGB(128 , 0, 128));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -130,6 +130,8 @@ public class ControlFlowPresentationProviderQemu extends TimeGraphPresentationPr
             return State.SYSCALL;
         case StateValues.PROCESS_STATUS_INTERRUPTED:
             return State.INTERRUPTED;
+        case StateValues.PREEMPTED:
+            return State.PREEMPTED;
         default:
             return State.UNKNOWN;
         }
