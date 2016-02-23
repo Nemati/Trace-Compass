@@ -929,15 +929,23 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                             for ( Entry<Integer,Long> entry:waitingCPU.get(cpu).entrySet())
                             {
                                 Long timeStamp = tmp.get(entry.getKey());
-                                if (tidToPtid.containsKey(entry.getKey())){
+                                if (tidToPtid.containsKey(entry.getKey()) && tidToPtid.containsKey(prevTid)){
+                                    currentDelayThread = ss.getQuarkRelativeAndAdd(currentDelayThread, tidToPtid.get(entry.getKey()).toString());
+                                    quark = ss.getQuarkRelativeAndAdd(currentDelayThread, "VM"); //$NON-NLS-1$
+                                    quark = ss.getQuarkRelativeAndAdd(quark, tidToPtid.get(prevTid).toString()); //$NON-NLS-1$
                                     Long delay = ts - timeStamp;
-                                    quark = ss.getQuarkRelativeAndAdd(currentDelayThread, entry.getKey().toString());
-                                    quark = ss.getQuarkRelativeAndAdd(quark, prevTid.toString() );
                                     value = ss.queryOngoingState(quark);
                                     Long accWait = value.isNull() ? 0 : value.unboxLong();
                                     value = TmfStateValue.newValueLong(delay+accWait);
                                     ss.modifyAttribute(ts, value, quark);
+
+                                    quark = ss.getQuarkRelativeAndAdd(quark, prevTid.toString() );
+                                    value = ss.queryOngoingState(quark);
+                                    accWait = value.isNull() ? 0 : value.unboxLong();
+                                    value = TmfStateValue.newValueLong(delay+accWait);
+                                    ss.modifyAttribute(ts, value, quark);
                                 }
+
                                 tmp.put(entry.getKey(), ts);
                             }
                             waitingCPU.put(cpu, tmp);
@@ -1046,10 +1054,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                             cpuTopreemption.remove(cpu);
                         }
                     }
-
-
-
-
 
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.PPID);
                     value = ss.queryOngoingState(quark);
