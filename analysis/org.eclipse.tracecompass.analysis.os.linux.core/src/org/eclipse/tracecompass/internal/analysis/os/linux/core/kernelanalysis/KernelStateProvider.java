@@ -87,8 +87,15 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     public static Map<String,Map<Integer,stackData>> stackRange = new HashMap<>();
     public static Map<Integer, String> TIDtoName = new HashMap<>();
     public static Map<Integer,Integer> tidToPtid = new HashMap<>();
-    public static Map<Integer,Integer> cpuTopreemption = new HashMap<>();
-    public static Map<Integer,Map <Integer, Long>> preemptedThread = new HashMap<>();
+    // It has all the threads which are preempted on this cpu
+    // <cpu,<tid,ts>>
+    public static Map<Integer,Map<Integer,Long>> cpuTopreemption = new HashMap<>();
+
+    // It has the thread which are running on this preempted cpu
+    // <cpu,<tid,ts>>
+    public static Map<Integer,Map<Integer,Long>> preemptingThread = new HashMap<>();
+
+
     public static Map<Integer, Map<Integer,Long>> waitingCPU = new HashMap<>();
 
     // ------------------------------------------------------------------------
@@ -906,10 +913,20 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                         quark = ss.getQuarkRelativeAndAdd(formerThreadNode, "exit_reason"); //$NON-NLS-1$
                         value = ss.queryOngoingState(quark);
                         if (value.unboxInt() != 12 && !value.isNull()) {
-                            cpuTopreemption.put(cpu, prevTid);
-                            Map<Integer,Long> tmp = new HashMap<>();
-                            tmp.put(prevTid, ts);
-                            preemptedThread.put(prevTid, tmp);
+
+                            if (cpuTopreemption.containsKey(cpu)){
+                                Map<Integer,Long> tmpCPU = cpuTopreemption.get(cpu);
+
+                                tmpCPU.put(prevTid, ts);
+
+                                cpuTopreemption.put(cpu, tmpCPU);
+                            } else {
+                                Map<Integer,Long> tmpCPU = new HashMap<>();
+                                tmpCPU.put(prevTid, ts);
+
+                                cpuTopreemption.put(cpu, tmpCPU);
+                            }
+
                             quark = ss.getQuarkRelativeAndAdd(quarkvCPU, "STATUS" ); //$NON-NLS-1$
                             value = StateValues.PREEMPTED_VALUE;
                             ss.modifyAttribute(ts, value, quark);
@@ -1013,45 +1030,48 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     value = ss.queryOngoingState(quark);
                     if (value.unboxInt() != 12 && !value.isNull()) {
                         if (cpuTopreemption.containsKey(cpu)){
-                            Integer preemptedTid = cpuTopreemption.get(cpu);
-                            if (preemptedThread.containsKey(preemptedTid)){
-                                Map<Integer,Long> tmp =  preemptedThread.get(preemptedTid);
-                                if (tmp.containsKey(preemptedTid)){
-                                    for (Entry<Integer, Long> entry:tmp.entrySet()){
-                                        if (!entry.getKey().equals(preemptedTid)){
-
-                                            quark = ss.getQuarkRelativeAndAdd(currentDelayThread, preemptedTid.toString());
-                                            value = ss.queryOngoingState(quark);
-                                            Long accPreempt = value.isNull() ? 0 : value.unboxLong();
-                                            value = TmfStateValue.newValueLong(ts-tmp.get(prevTid)+accPreempt);
-                                            ss.modifyAttribute(ts, value, quark);
-
-                                            if (tidToPtid.containsKey(entry.getKey())){
-                                                quark  = ss.getQuarkRelativeAndAdd(quark,"VM"); //$NON-NLS-1$
-
-                                                quark = ss.getQuarkRelativeAndAdd(quark,tidToPtid.get(entry.getKey()).toString());
-                                            }else {
-                                                quark  = ss.getQuarkRelativeAndAdd(quark,"Other"); //$NON-NLS-1$
-                                                quark = ss.getQuarkRelativeAndAdd(quark,entry.getKey().toString());
-                                            }
-                                            value = ss.queryOngoingState(quark);
-                                            Long accPreemptVM = value.isNull() ? 0 : value.unboxLong();
-                                            value = TmfStateValue.newValueLong(ts-entry.getValue()+accPreemptVM);
-                                            ss.modifyAttribute(ts, value, quark);
-
-                                            quark = ss.getQuarkRelativeAndAdd(quark, entry.getKey().toString());
-                                            value = ss.queryOngoingState(quark);
-                                            Long accPreemptT = value.isNull() ? 0 : value.unboxLong();
-                                            value = TmfStateValue.newValueLong(ts-entry.getValue()+accPreemptT);
-                                            ss.modifyAttribute(ts, value, quark);
+                            Map<Integer,Long> tmpCPU = cpuTopreemption.get(cpu);
+                            Map<Integer,Long> tmp = new HashMap<>();
+                            //preemptingThread.remove(cpu);
+                            if ( tmpCPU.containsKey(nextTid)){
+                                Map<Integer,Long> tmpCPUt = new HashMap<>();
+                                tmpCPUt.putAll(tmpCPU);
+                                for (Entry<Integer, Long> entry:tmpCPU.entrySet()){
+                                    if (entry.getKey().equals(nextTid)){
+                                        quark = ss.getQuarkRelativeAndAdd(currentDelayThread, tidToPtid.get(nextTid).toString());
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreempt = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-entry.getValue()+accPreempt);
+                                        ss.modifyAttribute(ts, value, quark);
+                                        if (tidToPtid.containsKey(prevTid)){
+                                            quark  = ss.getQuarkRelativeAndAdd(quark,"VM"); //$NON-NLS-1$
+                                            quark = ss.getQuarkRelativeAndAdd(quark,tidToPtid.get(prevTid).toString());
+                                        }else {
+                                            quark  = ss.getQuarkRelativeAndAdd(quark,"Other"); //$NON-NLS-1$
+                                            quark = ss.getQuarkRelativeAndAdd(quark,prevTid.toString());
                                         }
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreemptVM = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-entry.getValue()+accPreemptVM);
+                                        ss.modifyAttribute(ts, value, quark);
 
+                                        quark = ss.getQuarkRelativeAndAdd(quark, prevTid.toString());
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreemptT = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-entry.getValue()+accPreemptT);
+                                        ss.modifyAttribute(ts, value, quark);
+                                        tmpCPUt.put(entry.getKey(), ts);
                                     }
                                 }
-
-                                preemptedThread.remove(cpuTopreemption.get(cpu));
+                                tmp.put(nextTid, ts);
+                                preemptingThread.put(cpu, tmp);
+                                tmpCPUt.remove(nextTid);
+                                if (tmpCPU.size()>0){
+                                    cpuTopreemption.put(cpu, tmpCPUt);
+                                } else {
+                                    cpuTopreemption.remove(cpu);
+                                }
                             }
-                            cpuTopreemption.remove(cpu);
                         }
                     }
 
@@ -1145,11 +1165,8 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     netTs.put(nextTid, ts)  ;
                     quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "Netif" );//$NON-NLS-1$
                     netIf.put(nextTid, 0);
-                    //value = TmfStateValue.newValueInt(0);
-                    //ss.modifyAttribute(ts, value, quark);
                     quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "Netdev" );//$NON-NLS-1$
-                    //value = TmfStateValue.newValueInt(0);
-                    //ss.modifyAttribute(ts, value, quark);
+
                     netDev.put(nextTid, 0) ;
                 } else {
                     if (waitingCPU.containsKey(cpu)) {
@@ -1164,42 +1181,51 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 }
 
                 if (cpuTopreemption.containsKey(cpu)){
-                    if (preemptedThread.containsKey(cpuTopreemption.get(cpu))){
-                        Map<Integer,Long> tmp = preemptedThread.get(cpuTopreemption.get(cpu));
-                        if (nextTid>0){
-                            tmp.put(nextTid, ts);
-                        }
+                    Map<Integer,Long> tmpCPU = cpuTopreemption.get(cpu);
+                    if (preemptingThread.containsKey(cpu)){
+                        Map<Integer,Long> tmp = preemptingThread.get(cpu);
                         if (prevTid>0){
                             if (tmp.containsKey(prevTid)){
                                 Integer currentDelayThread = ss.getQuarkRelativeAndAdd(getNodeDelayQemu(ss), "preempting"); //$NON-NLS-1$
+                                for (Entry<Integer, Long> entry:tmpCPU.entrySet()){
+                                   // if (tidToPtid.containsKey(entry.getKey())){
+                                        quark = ss.getQuarkRelativeAndAdd(currentDelayThread,tidToPtid.get(entry.getKey()).toString());
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreemptVM = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-tmpCPU.get(entry.getKey())+accPreemptVM);
+                                        ss.modifyAttribute(ts, value, quark);
+                                        if (tidToPtid.containsKey(prevTid)){
+                                            quark = ss.getQuarkRelativeAndAdd(quark,"VM");
+                                            quark = ss.getQuarkRelativeAndAdd(quark,tidToPtid.get(prevTid).toString());
+                                        } else {
+                                            quark = ss.getQuarkRelativeAndAdd(quark,"Other");
+                                            quark = ss.getQuarkRelativeAndAdd(quark,prevTid.toString());
+                                        }
+                                        value = ss.queryOngoingState(quark);
+                                        accPreemptVM = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-tmpCPU.get(entry.getKey())+accPreemptVM);
+                                        ss.modifyAttribute(ts, value, quark);
 
-                                if (tidToPtid.containsKey(cpuTopreemption.get(cpu))){
-                                    quark = ss.getQuarkRelativeAndAdd(currentDelayThread,tidToPtid.get(cpuTopreemption.get(cpu)).toString());
-
-                                    if (tidToPtid.containsKey(prevTid)){
-                                        quark = ss.getQuarkRelativeAndAdd(quark,"VM");
-                                        quark = ss.getQuarkRelativeAndAdd(quark,tidToPtid.get(prevTid).toString());
-                                    } else {
-                                        quark = ss.getQuarkRelativeAndAdd(quark,"Other");
-                                        quark = ss.getQuarkRelativeAndAdd(quark,prevTid.toString());
-                                    }
-
-                                value = ss.queryOngoingState(quark);
-                                Long accPreemptVM = value.isNull() ? 0 : value.unboxLong();
-                                value = TmfStateValue.newValueLong(ts-tmp.get(prevTid)+accPreemptVM);
-                                ss.modifyAttribute(ts, value, quark);
-
-
-                                quark = ss.getQuarkRelativeAndAdd(quark, prevTid.toString());
-                                value = ss.queryOngoingState(quark);
-                                Long accPreemptT = value.isNull() ? 0 : value.unboxLong();
-                                value = TmfStateValue.newValueLong(ts-tmp.get(prevTid)+accPreemptT);
-                                ss.modifyAttribute(ts, value, quark);
+                                        quark = ss.getQuarkRelativeAndAdd(quark, prevTid.toString());
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreemptT = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-tmpCPU.get(entry.getKey())+accPreemptT);
+                                        ss.modifyAttribute(ts, value, quark);
+                                    //}
+                                    tmpCPU.put(entry.getKey(), ts);
                                 }
+                                cpuTopreemption.put(cpu, tmpCPU);
                                 tmp.remove(prevTid);
                             }
                         }
-                        preemptedThread.put(cpuTopreemption.get(cpu), tmp);
+                        if (nextTid>0){
+                            tmp.put(nextTid, ts);
+                        }
+                        if (tmp.size()>0){
+                            preemptingThread.put(cpu, tmp);
+                        } else if(preemptingThread.containsKey(cpu)) {
+                            preemptingThread.remove(cpu);
+                        }
                     }
                 }
 
