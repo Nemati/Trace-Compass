@@ -240,9 +240,6 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
 
         final ITmfStateSystem ssq2 = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID);
 
-        if (trace.getName().equals("kernel")) { //$NON-NLS-1$
-            return;
-        }
             if (ssq2 == null) {
                 return;
             }

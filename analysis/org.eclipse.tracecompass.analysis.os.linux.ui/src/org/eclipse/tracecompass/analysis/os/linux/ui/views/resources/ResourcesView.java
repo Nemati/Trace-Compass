@@ -119,9 +119,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
     @Override
     protected void buildEventList(ITmfTrace trace, ITmfTrace parentTrace, final IProgressMonitor monitor)  {
         final ITmfStateSystem ssq = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID);
-        if (trace.getName().equals("kernel")) { //$NON-NLS-1$
-            return;
-        }
+
         if (ssq == null) {
             return;
         }
