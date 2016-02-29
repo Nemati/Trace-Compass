@@ -123,7 +123,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         fLayout = layout;
         fEventNames = buildEventNames(layout);
     }
-    class stackData {
+    private class stackData {
         public Long start = (long) 0;
         public Long end = (long)0;
         public int tid = 0;
@@ -221,6 +221,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         final long ts = event.getTimestamp().getValue();
 
         try {
+
             final ITmfStateSystemBuilder ss = checkNotNull(getStateSystemBuilder());
 
             /* Shortcut for the "current CPU" attribute node */
@@ -1074,7 +1075,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                             }
                         }
                     }
-
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.PPID);
                     value = ss.queryOngoingState(quark);
                     Integer PTID = value.isNull() ? 0 : value.unboxInt();
