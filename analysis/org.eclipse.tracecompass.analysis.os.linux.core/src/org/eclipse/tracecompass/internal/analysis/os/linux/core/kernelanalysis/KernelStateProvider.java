@@ -13,8 +13,7 @@
 package org.eclipse.tracecompass.internal.analysis.os.linux.core.kernelanalysis;
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
-
-
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -58,6 +57,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
      * Version number of this state provider. Please bump this if you modify the
      * contents of the generated state history in some way.
      */
+    private static long timeDump = 0;
     private static final int VERSION = 8;
 
     private static final int IRQ_HANDLER_ENTRY_INDEX = 1;
@@ -87,6 +87,9 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     public static Map<String,Map<Integer,stackData>> stackRange = new HashMap<>();
     public static Map<Integer, String> TIDtoName = new HashMap<>();
     public static Map<Integer,Integer> tidToPtid = new HashMap<>();
+    public static Map<Integer,Map<Integer,Long>> VMToUsage = new HashMap<>();
+    // showing on which CPU it is being preempted
+    public static Map<Integer,Integer> threadPreempted = new HashMap<>();
     // It has all the threads which are preempted on this cpu
     // <cpu,<tid,ts>>
     public static Map<Integer,Map<Integer,Long>> cpuTopreemption = new HashMap<>();
@@ -198,6 +201,25 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         return ssb.getQuarkAbsoluteAndAdd(Attributes.NetQemu);
     }
 
+    private static void showPercPreemption(Map<String,Map<String,Long>> preemptingVMsValue, Map<String,Long> usageVMsValue){
+
+        for (Entry<String, Map<String, Long>> threads:preemptingVMsValue.entrySet()){
+            Long sumPreemption = 0L;
+            for (Entry<String,Long> vm:threads.getValue().entrySet()){
+                sumPreemption += vm.getValue();
+            }
+            System.out.println("Preempted VM = " + threads.getKey());
+            System.out.println("Preempted = " + String.valueOf(sumPreemption)+" Usage = "+ usageVMsValue.get(threads.getKey()));
+            System.out.println("Votes = " + (float)sumPreemption/(sumPreemption+usageVMsValue.get(threads.getKey()))*100);
+            for (Entry<String,Long> vm:threads.getValue().entrySet()){
+                System.out.println(vm.getKey() + "->"+((float)vm.getValue()/sumPreemption)*100);
+            }
+
+        }
+
+    }
+
+
     @Override
     public KernelStateProvider getNewInstance() {
         return new KernelStateProvider(this.getTrace(), fLayout);
@@ -223,7 +245,42 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         try {
 
             final ITmfStateSystemBuilder ss = checkNotNull(getStateSystemBuilder());
-
+            if ((ts - timeDump) >= 1000000000){
+                Map<String,Map<String,Long>> preemptingVMsValue = new HashMap<>();
+                Map<String,Long> usageVMsValue = new HashMap<>();
+                if (timeDump == 0){
+                    timeDump = ts ;
+                } else {
+                    System.out.println("****************************************************");
+                    timeDump = ts ;
+                    // Preemption Matrix for each VM
+                    Integer currentDelayThread = ss.getQuarkRelativeAndAdd(getNodeDelayQemu(ss), "preempting"); //$NON-NLS-1$
+                    List<Integer> quarksList = ss.getSubAttributes(currentDelayThread, false);
+                    for (Integer vm:quarksList){
+                        String vmThread = ss.getAttributeName(vm);
+                        Integer quark = ss.getQuarkRelativeAndAdd(vm, "VM"); //$NON-NLS-1$
+                        List<Integer> preemptingVMsList = ss.getSubAttributes(quark, false);
+                        Map<String,Long> tmpValue = new HashMap<>();
+                        for (Integer preemptingVMList:preemptingVMsList){
+                            ITmfStateValue value = ss.queryOngoingState(preemptingVMList);
+                            Long preemtingValue = value.isNull() ? 0 : value.unboxLong();
+                            tmpValue.put(ss.getAttributeName(preemptingVMList), preemtingValue);
+                        }
+                        preemptingVMsValue.put(vmThread,tmpValue);
+                    }
+                    // Usage Matrix for each VM
+                    Integer currentUsageThread = ss.getQuarkRelativeAndAdd(getNodeDelayQemu(ss), "usage"); //$NON-NLS-1$
+                    List<Integer> quarksListUsage = ss.getSubAttributes(currentUsageThread, false);
+                    for (Integer vm:quarksListUsage){
+                        String vmThread = ss.getAttributeName(vm);
+                        ITmfStateValue value = ss.queryOngoingState(vm);
+                        Long usageValue = value.isNull() ? 0 : value.unboxLong();
+                        usageVMsValue.put(vmThread, usageValue);
+                    }
+                    //System.out.println(usageVMsValue);
+                    showPercPreemption(preemptingVMsValue,usageVMsValue);
+                }
+            }
             /* Shortcut for the "current CPU" attribute node */
             final int currentCPUNode = ss.getQuarkRelativeAndAdd(getNodeCPUs(ss), cpu.toString());
 
@@ -853,7 +910,27 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     value = StateValues.PROCESS_STATUS_WAIT_FOR_CPU_VALUE;
                 }
                 ss.modifyAttribute(ts, value, quark);
+                if (nextTid > 0) {
+                    // add all the threads that preempt vcpu
 
+                    /* Check if the entering process is in kernel or user mode */
+                    quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.SYSTEM_CALL);
+                    if (vcpu_find) {
+                        value = StateValues.CPU_STATUS_VMX_ROOT_VALUE;
+
+                    } else {
+                        value = StateValues.CPU_STATUS_RUN_USERMODE_VALUE;
+                    }
+                    if (ss.queryOngoingState(quark).isNull()) {
+
+                    } else {
+                        value = StateValues.CPU_STATUS_RUN_SYSCALL_VALUE;
+                    }
+                } else {
+                    value = StateValues.CPU_STATUS_IDLE_VALUE;
+                }
+                quark = ss.getQuarkRelativeAndAdd(currentCPUNode, Attributes.STATUS);
+                ss.modifyAttribute(ts, value, quark);
                 /* Set the status of the new scheduled process */
                 setProcessToRunning(ss, ts, newCurrentThreadNode);
 
@@ -881,7 +958,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     Integer PTID = value.isNull() ? 0 : value.unboxInt();
                     int currentThreadCPU = 0;
                     int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
-                    int threadPTID = prevTid;
+                    Integer threadPTID = prevTid;
                     if (!tidToPtid.containsKey(prevTid) ) {
                         while (PTID != 1 && PTID !=0) {
                             quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
@@ -902,6 +979,24 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeCPUQemu(ss), String.valueOf(threadPTID));
                     String vcpu_id = value.toString();
                     if (!value.isNull()){
+                        // calculating Usage for VMs
+                        Integer currentUsageThread = ss.getQuarkRelativeAndAdd(getNodeDelayQemu(ss), "usage"); //$NON-NLS-1$
+                        if (VMToUsage.containsKey(threadPTID)) {
+                            Map<Integer,Long> usageTmp = VMToUsage.get(threadPTID);
+                            if (usageTmp.containsKey(prevTid)){
+                                quark = ss.getQuarkRelativeAndAdd(currentUsageThread, String.valueOf(threadPTID));
+                                value = ss.queryOngoingState(quark);
+                                Long prevUsage = value.isNull() ? 0 : value.unboxLong();
+                                prevUsage += ts- usageTmp.get(prevTid);
+                                value = TmfStateValue.newValueLong(prevUsage);
+                                ss.modifyAttribute(ts, value, quark);
+                                usageTmp.remove(prevTid);
+                                VMToUsage.put(threadPTID, usageTmp);
+                            }
+                        }
+                        // *********************************************************
+
+
                         int quarktmp = ss.getQuarkRelativeAndAdd(currentThreadCPU, "vCPU"); //$NON-NLS-1$
                         int quarkvCPU= ss.getQuarkRelativeAndAdd(quarktmp, vcpu_id); //$NON-NLS-1$
 
@@ -914,7 +1009,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                         quark = ss.getQuarkRelativeAndAdd(formerThreadNode, "exit_reason"); //$NON-NLS-1$
                         value = ss.queryOngoingState(quark);
                         if (value.unboxInt() != 12 && !value.isNull()) {
-
                             if (cpuTopreemption.containsKey(cpu)){
                                 Map<Integer,Long> tmpCPU = cpuTopreemption.get(cpu);
 
@@ -927,7 +1021,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
                                 cpuTopreemption.put(cpu, tmpCPU);
                             }
-
+                            threadPreempted.put(prevTid, cpu);
                             quark = ss.getQuarkRelativeAndAdd(quarkvCPU, "STATUS" ); //$NON-NLS-1$
                             value = StateValues.PREEMPTED_VALUE;
                             ss.modifyAttribute(ts, value, quark);
@@ -1030,6 +1124,51 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, "exit_reason"); //$NON-NLS-1$
                     value = ss.queryOngoingState(quark);
                     if (value.unboxInt() != 12 && !value.isNull()) {
+                        if (threadPreempted.containsKey(nextTid)){
+                            if (cpu != threadPreempted.get(nextTid)){
+                                Integer formerCPU = threadPreempted.get(nextTid);
+                                if (cpuTopreemption.containsKey(formerCPU)){
+                                    Map<Integer,Long> tmpCPU = cpuTopreemption.get(formerCPU);
+                                    if (tmpCPU.containsKey(nextTid)){
+                                        quark = ss.getQuarkRelativeAndAdd(currentDelayThread, tidToPtid.get(nextTid).toString());
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreempt = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-tmpCPU.get(nextTid)+accPreempt);
+                                        ss.modifyAttribute(ts, value, quark);
+
+                                        int currentCPUNodeTmp = ss.getQuarkRelativeAndAdd(getNodeCPUs(ss), formerCPU.toString());
+                                        /*
+                                         * Shortcut for the "current thread" attribute node. It requires
+                                         * querying the current CPU's current thread.
+                                         */
+                                        quark = ss.getQuarkRelativeAndAdd(currentCPUNodeTmp, Attributes.CURRENT_THREAD);
+                                        value = ss.queryOngoingState(quark);
+                                        Integer prevRunningThread = value.isNull() ? -1 : value.unboxInt();
+
+                                        if (tidToPtid.containsKey(prevRunningThread)){
+                                            quark  = ss.getQuarkRelativeAndAdd(quark,"VM"); //$NON-NLS-1$
+                                            quark = ss.getQuarkRelativeAndAdd(quark,tidToPtid.get(prevRunningThread).toString());
+                                        }else {
+                                            quark  = ss.getQuarkRelativeAndAdd(quark,"Other"); //$NON-NLS-1$
+                                            quark = ss.getQuarkRelativeAndAdd(quark,prevRunningThread.toString());
+                                        }
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreemptVM = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-tmpCPU.get(nextTid)+accPreemptVM);
+                                        ss.modifyAttribute(ts, value, quark);
+
+                                        quark = ss.getQuarkRelativeAndAdd(quark, prevRunningThread.toString());
+                                        value = ss.queryOngoingState(quark);
+                                        Long accPreemptT = value.isNull() ? 0 : value.unboxLong();
+                                        value = TmfStateValue.newValueLong(ts-tmpCPU.get(nextTid)+accPreemptT);
+                                        ss.modifyAttribute(ts, value, quark);
+                                        tmpCPU.remove(nextTid);
+                                        cpuTopreemption.put(formerCPU, tmpCPU);
+                                    }
+
+                                }
+                            }
+                        }
                         if (cpuTopreemption.containsKey(cpu)){
                             Map<Integer,Long> tmpCPU = cpuTopreemption.get(cpu);
                             Map<Integer,Long> tmp = new HashMap<>();
@@ -1103,6 +1242,20 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     value = ss.queryOngoingState(quark);
                     String vcpu_id = value.toString();
                     if (!value.isNull()){
+                        // calculating Usage for VMs
+                        if (VMToUsage.containsKey(threadPTID)) {
+
+                            Map<Integer,Long> usageTmp = VMToUsage.get(threadPTID);
+                            usageTmp.put(nextTid, ts);
+                            VMToUsage.put(threadPTID, usageTmp);
+                        } else {
+                            Map<Integer,Long> usageTmp = new HashMap<>();
+                            usageTmp.put(nextTid, ts);
+                            VMToUsage.put(threadPTID, usageTmp);
+                        }
+                        // *********************************************************
+
+
                         int quarktmp = ss.getQuarkRelativeAndAdd(currentThreadCPU, "vCPU"); //$NON-NLS-1$
                         int quarkvCPU= ss.getQuarkRelativeAndAdd(quarktmp, vcpu_id); //$NON-NLS-1$
                         value = TmfStateValue.newValueInt(1);
@@ -1229,19 +1382,21 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     }
                 }
 
+
                 /* Set the status of the CPU itself */
                 if (nextTid > 0) {
                     // add all the threads that preempt vcpu
 
                     /* Check if the entering process is in kernel or user mode */
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.SYSTEM_CALL);
-                    if (ss.queryOngoingState(quark).isNull()) {
-                        if (vcpu_find) {
-                            value = StateValues.CPU_STATUS_VMX_ROOT_VALUE;
+                    if (vcpu_find) {
+                        value = StateValues.CPU_STATUS_VMX_ROOT_VALUE;
 
-                        } else {
-                            value = StateValues.CPU_STATUS_RUN_USERMODE_VALUE;
-                        }
+                    } else {
+                        value = StateValues.CPU_STATUS_RUN_USERMODE_VALUE;
+                    }
+                    if (ss.queryOngoingState(quark).isNull()) {
+
                     } else {
                         value = StateValues.CPU_STATUS_RUN_SYSCALL_VALUE;
                     }

@@ -243,11 +243,8 @@ public class ControlFlowView extends AbstractStateSystemTimeGraphView {
             if (ssq2 == null) {
                 return;
             }
-
-        //System.out.println("111");
         final List<ControlFlowEntry> entryList = new ArrayList<>();
         final Map<Integer, ControlFlowEntry> entryMap = new HashMap<>();
-
         long start = ssq2.getStartTime();
         setStartTime(Math.min(getStartTime(), start));
 
