@@ -121,6 +121,12 @@ public interface StateValues {
     int PROCESS_STATUS_RUN_SYSCALL = 3;
     int PROCESS_STATUS_INTERRUPTED = 4;
     int PROCESS_STATUS_WAIT_FOR_CPU = 5;
+    int PROCESS_STATUS_NON_ROOT = 6;
+    /**
+     * @since 2.0
+     */
+    int PROCESS_STATUS_ROOT = 7;
+    int PROCESS_STATUS_PREEMPTED = 8;
     /**
      * @since 1.0
      */
@@ -136,6 +142,15 @@ public interface StateValues {
     ITmfStateValue PROCESS_STATUS_RUN_SYSCALL_VALUE = TmfStateValue.newValueInt(PROCESS_STATUS_RUN_SYSCALL);
     ITmfStateValue PROCESS_STATUS_INTERRUPTED_VALUE = TmfStateValue.newValueInt(PROCESS_STATUS_INTERRUPTED);
     ITmfStateValue PROCESS_STATUS_WAIT_FOR_CPU_VALUE = TmfStateValue.newValueInt(PROCESS_STATUS_WAIT_FOR_CPU);
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue PROCESS_STATUS_NON_ROOT_VALUE = TmfStateValue.newValueInt(PROCESS_STATUS_NON_ROOT);
+    /**
+     * @since 2.0
+     */
+    ITmfStateValue PROCESS_STATUS_ROOT_VALUE = TmfStateValue.newValueInt(PROCESS_STATUS_ROOT);
+    ITmfStateValue PROCESS_STATUS_PREEMPTED_VALUE = TmfStateValue.newValueInt(PROCESS_STATUS_PREEMPTED);
 
     /* SoftIRQ-specific stuff. -1: null/disabled, >= 0: running on that CPU */
     int SOFT_IRQ_RAISED = -2;

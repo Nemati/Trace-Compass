@@ -190,6 +190,26 @@
         </filter>
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="PROCESS_STATUS_NON_ROOT"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="PROCESS_STATUS_NON_ROOT_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="PROCESS_STATUS_PREEMPTED"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="PROCESS_STATUS_PREEMPTED_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="VCPU_WAIT_FOR_PCPU"/>
             </message_arguments>
         </filter>

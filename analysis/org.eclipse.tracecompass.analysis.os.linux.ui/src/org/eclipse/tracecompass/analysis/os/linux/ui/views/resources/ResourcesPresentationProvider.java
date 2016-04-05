@@ -132,7 +132,19 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 }
                 return State.SOFT_IRQ_ACTIVE;
             }
-            else if (entry.getType() == Type.IOQemu) {
+            else if (entry.getType() == Type.IOQemuRead) {
+                if (value == StateValues.IO_STATUS_IDLE) {
+                    return State.IDLE;
+                } else if (value == StateValues.IO_WRITE_QEMU) {
+                    return State.WRITE_IO_QEMU;
+                } else if (value == StateValues.IO_READ_QEMU) {
+                    return State.READ_IO_QEMU;
+                }
+                else if (value == StateValues.IO_OTHER) {
+                    return State.OTHER_IO_QEMU;
+                }
+            }
+            else if (entry.getType() == Type.IOQemuWrite) {
                 if (value == StateValues.IO_STATUS_IDLE) {
                     return State.IDLE;
                 } else if (value == StateValues.IO_WRITE_QEMU) {
@@ -224,31 +236,25 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return retMap;
                 }
                 // Check for IO
-                if (entry.getType().equals(Type.IOQemu)) {
+                if (entry.getType().equals(Type.IOQemuRead)) {
 
 
                     int status = tcEvent.getValue();
 
                     try {
                         int IOQuark = entry.getQuark();
-                        if (status == StateValues.IO_WRITE_QEMU){
-                            int currentThreadQuark = ss.getQuarkRelative(IOQuark, "write"); //$NON-NLS-1$
-                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
-                            if (!interval.getStateValue().isNull()) {
-                                ITmfStateValue value = interval.getStateValue();
-                                retMap.put("Write",value.toString()); //$NON-NLS-1$
-                            }
-                        }
+
                         if (status == StateValues.IO_READ_QEMU){
                             int currentThreadQuark = ss.getQuarkRelative(IOQuark, "read"); //$NON-NLS-1$
+                            currentThreadQuark = ss.getQuarkRelative(currentThreadQuark, "transfer"); //$NON-NLS-1$
                             ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
                             if (!interval.getStateValue().isNull()) {
                                 ITmfStateValue value = interval.getStateValue();
                                 retMap.put("Read",value.toString()); //$NON-NLS-1$
                             }
                         }
-                        int currentThreadQuark = ss.getQuarkRelative(IOQuark, "ValueIO");//$NON-NLS-1$
-
+                        int currentThreadQuark = ss.getQuarkRelative(IOQuark, "read"); //$NON-NLS-1$
+                        currentThreadQuark = ss.getQuarkRelative(currentThreadQuark, "numberOfSubmited"); //$NON-NLS-1$
                         ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
                         if (!interval.getStateValue().isNull()) {
                             ITmfStateValue value = interval.getStateValue();
@@ -262,6 +268,42 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                         /* Ignored */
                     }
                 }
+
+                if (entry.getType().equals(Type.IOQemuWrite)) {
+
+
+                    int status = tcEvent.getValue();
+
+                    try {
+                        int IOQuark = entry.getQuark();
+                        if (status == StateValues.IO_WRITE_QEMU){
+                            int currentThreadQuark = ss.getQuarkRelative(IOQuark, "write"); //$NON-NLS-1$
+                            currentThreadQuark = ss.getQuarkRelative(currentThreadQuark, "transfer"); //$NON-NLS-1$
+                            ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                            if (!interval.getStateValue().isNull()) {
+                                ITmfStateValue value = interval.getStateValue();
+                                retMap.put("Write",value.toString()); //$NON-NLS-1$
+                            }
+                        }
+
+
+                        int currentThreadQuark = ss.getQuarkRelative(IOQuark, "write"); //$NON-NLS-1$
+                        currentThreadQuark = ss.getQuarkRelative(currentThreadQuark, "numberOfSubmited"); //$NON-NLS-1$
+                        ITmfStateInterval interval = ss.querySingleState(hoverTime, currentThreadQuark);
+                        if (!interval.getStateValue().isNull()) {
+                            ITmfStateValue value = interval.getStateValue();
+                            retMap.put("# Submited",value.toString());  //$NON-NLS-1$
+                        }
+                        //$NON-NLS-2$
+
+                    } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
+                        Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
+                    } catch (StateSystemDisposedException e) {
+                        /* Ignored */
+                    }
+                }
+
+
                 // Check for CPU Qemu
                 if (entry.getType().equals(Type.CPUQemu)) {
                     int CPUQuark = entry.getQuark();

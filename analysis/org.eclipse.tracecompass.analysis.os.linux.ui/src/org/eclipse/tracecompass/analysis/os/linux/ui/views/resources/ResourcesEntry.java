@@ -32,7 +32,11 @@ public class ResourcesEntry extends TimeGraphEntry implements Comparable<ITimeGr
          * @since 1.1
          *
          */
-        IOQemu,
+        IOQemuRead,
+        /**
+         * @since 1.1
+         */
+        IOQemuWrite,
 
         /**
          * for Cpu of Qemu

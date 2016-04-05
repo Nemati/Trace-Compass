@@ -37,6 +37,7 @@ public interface Attributes {
     /**
      * @since 2.0
      */
+    String vmName = "vmName";
     String NetQemu = "NetQemu";
     /* First-level attributes */
     String CPUS = "CPUs";

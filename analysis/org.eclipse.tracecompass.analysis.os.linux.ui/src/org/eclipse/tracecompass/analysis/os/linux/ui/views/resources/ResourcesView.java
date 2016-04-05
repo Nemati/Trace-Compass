@@ -102,18 +102,18 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
     @Override
     protected void rebuild() {
         setStartTime(Long.MAX_VALUE);
-         setEndTime(Long.MIN_VALUE);
-         refresh();
-         ITmfTrace viewTrace = getTrace();
-         if (viewTrace == null) {
-             return;
-         }
-         synchronized (fBuildThreadMap) {
-             BuildThread buildThread = new BuildThread(viewTrace, viewTrace, getName());
-             fBuildThreadMap.put(viewTrace, buildThread);
-             buildThread.start();
-         }
-     }
+        setEndTime(Long.MIN_VALUE);
+        refresh();
+        ITmfTrace viewTrace = getTrace();
+        if (viewTrace == null) {
+            return;
+        }
+        synchronized (fBuildThreadMap) {
+            BuildThread buildThread = new BuildThread(viewTrace, viewTrace, getName());
+            fBuildThreadMap.put(viewTrace, buildThread);
+            buildThread.start();
+        }
+    }
 
 
     @Override
@@ -158,7 +158,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                         String vmName = (ssq.getAttributeName(vmQuark));
                         String tidVM = iterator.next().getStateValue().toString();
                         if (!tidVM.equals("nullValue")){ //$NON-NLS-1$
-                        namePIDmap.put(tidVM, vmName);
+                            namePIDmap.put(tidVM, vmName);
                         }
                     }
 
@@ -205,18 +205,29 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
             }
             List<Integer> IOQuarks = ssq.getQuarks(Attributes.IO, "*"); //$NON-NLS-1$
             for (Integer IOQuark : IOQuarks) {
+                //Integer quark =  ssq.getq
                 int IOQ = Integer.parseInt(ssq.getAttributeName(IOQuark));
                 ResourcesEntry entry = entryMap.get(IOQuark);
                 if (entry == null) {
                     if (namePIDmap.get(String.valueOf(IOQ))!=null){
-                    entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemu, IOQ, "Disk "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
-                    entryMap.put(IOQuark, entry);
-                    traceEntry.addChild(entry);
+
+                        entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemuWrite, IOQ, "Disk "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
+                        entryMap.put(IOQuark, entry);
+                        traceEntry.addChild(entry);
+
+                        entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemuRead, IOQ, "Disk "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
+                        entryMap.put(IOQuark, entry);
+                        traceEntry.addChild(entry);
+
+
                     }
                 } else {
                     entry.updateEndTime(endTime);
                 }
             }
+
+
+
             List<Integer> CPUQemuQuarks = ssq.getQuarks(Attributes.CPUQemu, "*"); //$NON-NLS-1$
             for (Integer CPUQemuQuark : CPUQemuQuarks) {
                 int CPUQ = Integer.parseInt(ssq.getAttributeName(CPUQemuQuark));
@@ -359,10 +370,55 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 lastStartTime = time;
                 lastEndTime = time + duration;
             }
-        } else if (resourcesEntry.getType().equals(Type.IOQemu)) {
+        } else if (resourcesEntry.getType().equals(Type.IOQemuRead)) {
             int statusQuark;
             try {
-                statusQuark = ssq.getQuarkRelative(quark,"STATUS"); //$NON-NLS-1$
+                statusQuark = ssq.getQuarkRelative(quark,"read"); //$NON-NLS-1$dd
+                statusQuark = ssq.getQuarkRelative(statusQuark,"STATUS"); //$NON-NLS-1$dd
+            } catch (AttributeNotFoundException e) {
+                /*
+                 * The sub-attribute "status" is not available. May happen
+                 * if the trace does not have sched_switch events enabled.
+                 */
+                return null;
+            }
+            eventList = new ArrayList<>(fullStates.size());
+            ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
+            long lastStartTime = lastInterval == null ? -1 : lastInterval.getStartTime();
+            long lastEndTime = lastInterval == null ? -1 : lastInterval.getEndTime() + 1;
+            for (List<ITmfStateInterval> fullState : fullStates) {
+                if (monitor.isCanceled()) {
+                    return null;
+                }
+                if (statusQuark >= fullState.size()) {
+                    /* No information on this cpu (yet?), skip it for now */
+                    continue;
+                }
+                ITmfStateInterval statusInterval = fullState.get(statusQuark);
+                int status = statusInterval.getStateValue().unboxInt();
+                long time = statusInterval.getStartTime();
+                long duration = statusInterval.getEndTime() - time + 1;
+                duration += 0;
+                if (time == lastStartTime) {
+                    continue;
+                }
+                if (!statusInterval.getStateValue().isNull()) {
+                    if (lastEndTime != time && lastEndTime != -1) {
+                        eventList.add(new TimeEvent(entry, lastEndTime, time - lastEndTime));
+                    }
+                    eventList.add(new TimeEvent(entry, time, duration, status));
+                } else {
+                    eventList.add(new NullTimeEvent(entry, time, duration));
+                }
+                lastStartTime = time;
+                lastEndTime = time + duration;
+            }
+        }
+        else if (resourcesEntry.getType().equals(Type.IOQemuWrite)) {
+            int statusQuark;
+            try {
+                statusQuark = ssq.getQuarkRelative(quark,"write"); //$NON-NLS-1$dd
+                statusQuark = ssq.getQuarkRelative(statusQuark,"STATUS"); //$NON-NLS-1$dd
             } catch (AttributeNotFoundException e) {
                 /*
                  * The sub-attribute "status" is not available. May happen

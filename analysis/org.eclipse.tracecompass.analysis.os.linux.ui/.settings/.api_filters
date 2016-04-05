@@ -13,5 +13,10 @@
                 <message_argument value="CPUQemu"/>
             </message_arguments>
         </filter>
+        <filter id="1177550852">
+            <message_arguments>
+                <message_argument value="IOQemuWrite"/>
+            </message_arguments>
+        </filter>
     </resource>
 </component>
