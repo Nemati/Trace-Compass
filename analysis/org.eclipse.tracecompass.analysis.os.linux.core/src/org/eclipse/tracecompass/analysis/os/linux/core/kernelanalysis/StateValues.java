@@ -36,6 +36,14 @@ public interface StateValues {
      */
     int CPU_STATUS_VMX_NON_ROOT = 5;
     int CPU_STATUS_VMX_ROOT = 6;
+    /**
+     * @since 2.0
+     */
+    int CPU_STATUS_VMX_ROOT_DISK = 9;
+    /**
+     * @since 2.0
+     */
+    int CPU_STATUS_VMX_ROOT_NET = 10;
     int PREEMPTED = 7;
     /**
      * @since 2.0
@@ -47,6 +55,9 @@ public interface StateValues {
 
     ITmfStateValue CPU_STATUS_VMX_NON_ROOT_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_NON_ROOT);
     ITmfStateValue CPU_STATUS_VMX_ROOT_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_ROOT);
+
+    ITmfStateValue CPU_STATUS_VMX_ROOT_DISK_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_ROOT_DISK);
+    ITmfStateValue CPU_STATUS_VMX_ROOT_NET_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_ROOT_NET);
     /**
      * @since 2.0
      */

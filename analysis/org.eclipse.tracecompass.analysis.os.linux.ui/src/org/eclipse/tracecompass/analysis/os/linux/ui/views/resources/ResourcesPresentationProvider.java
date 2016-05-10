@@ -83,7 +83,9 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         CPU_Qemu_Busy_MANY (new RGB (50,0,0)),
         Net_Qemu_Busy (new RGB (255,20,147)),
         VMX_Non_Root (new RGB (139,69,19)),
-        VMX_Root (new RGB (218,165,32));
+        VMX_Root (new RGB (218,165,32)),
+        VMX_Root_Disk (new RGB (128,205,193)),
+        VMX_Root_Net (new RGB (1,133,113));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -123,7 +125,12 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return State.VMX_Non_Root;
                 } else if (value == StateValues.CPU_STATUS_VMX_ROOT) {
                     return State.VMX_Root;
+                }else if (value == StateValues.CPU_STATUS_VMX_ROOT_DISK) {
+                    return State.VMX_Root_Disk;
+                }else if (value == StateValues.CPU_STATUS_VMX_ROOT_NET) {
+                    return State.VMX_Root_Net;
                 }
+
             } else if (entry.getType() == Type.IRQ) {
                 return State.IRQ_ACTIVE;
             } else if (entry.getType() == Type.SOFT_IRQ) {

@@ -211,11 +211,11 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 if (entry == null) {
                     if (namePIDmap.get(String.valueOf(IOQ))!=null){
 
-                        entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemuWrite, IOQ, "Disk "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
+                        entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemuWrite, IOQ, "Disk Write "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
                         entryMap.put(IOQuark, entry);
                         traceEntry.addChild(entry);
 
-                        entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemuRead, IOQ, "Disk "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
+                        entry = new ResourcesEntry(IOQuark, parentTrace, startTime, endTime, Type.IOQemuRead, IOQ, "Disk Read "+ namePIDmap.get(String.valueOf(IOQ))); //$NON-NLS-1$
                         entryMap.put(IOQuark, entry);
                         traceEntry.addChild(entry);
 
@@ -257,6 +257,10 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                             Name = String.valueOf(tidOfVM);
                         }
                     }
+                    if (namePIDmap.get(Name)==null){
+                        namePIDmap.put(Name, "testU1");
+                    }
+
                     entry = new ResourcesEntry(NetQemuQuark, parentTrace, startTime, endTime, Type.NetQemu, NetQ, "Net "+ namePIDmap.get(Name)); //$NON-NLS-1$
                     entryMap.put(NetQemuQuark, entry);
                     traceEntry.addChild(entry);

@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -115,6 +116,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+//import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.Attributes;
+import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.KernelAnalysisModule;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.tmf.core.filter.TmfCollapseFilter;
 import org.eclipse.tracecompass.internal.tmf.ui.Activator;
@@ -122,6 +125,11 @@ import org.eclipse.tracecompass.internal.tmf.ui.Messages;
 import org.eclipse.tracecompass.internal.tmf.ui.commands.CopyToClipboardOperation;
 import org.eclipse.tracecompass.internal.tmf.ui.commands.ExportToTextCommandHandler;
 import org.eclipse.tracecompass.internal.tmf.ui.dialogs.MultiLineInputDialog;
+import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
+import org.eclipse.tracecompass.statesystem.core.StateSystemUtils;
+import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
+import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
+import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
 import org.eclipse.tracecompass.tmf.core.component.ITmfEventProvider;
 import org.eclipse.tracecompass.tmf.core.component.TmfComponent;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
@@ -144,6 +152,7 @@ import org.eclipse.tracecompass.tmf.core.signal.TmfEventSelectedSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSelectionRangeUpdatedSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.tracecompass.tmf.core.signal.TmfTraceUpdatedSignal;
+import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestamp;
@@ -1152,6 +1161,215 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
             }
         };
 
+        final IAction haniTest = new Action(Messages.TmfEventsTable_Hani_Test) {
+            @Override
+            public void run() {
+                Map<String,Map<String,Map<String,Double>>> disk = new HashMap<>();
+                Map<String,Map<String,Map<String,Double>>> vcpu = new HashMap<>();
+                Map<String,Map<String,Map<String,Double>>> net = new HashMap<>();
+                Map<String,Map<String,Double>> preemptedVMsValue = new HashMap<>();
+                Map<String,Double> preemptedValue = new HashMap<>();
+                Map<String,Double> preemptingVMsValue = new HashMap<>();
+                final ITmfTrace trace = fTrace;
+                if (trace == null) {
+                    System.out.println("Trace is null");
+
+                }  else {
+                    System.out.println(trace.toString());
+                }
+                ITmfStateSystem kernelSs = TmfStateSystemAnalysisModule.getStateSystem(trace, KernelAnalysisModule.ID);
+                if (kernelSs == null) {
+                    System.out.println("Trace is null");
+                } else {
+                    try {
+
+
+                        int diskNode = kernelSs.getQuarkAbsolute("DiskQemu");
+                        int netNode = kernelSs.getQuarkAbsolute("NetQemu");
+                        int cpuNode = kernelSs.getQuarkAbsolute("CPUQemu");
+                        List<Integer> diskNodes = kernelSs.getSubAttributes(diskNode, false);
+                        List<Integer> netNodes = kernelSs.getSubAttributes(netNode, false);
+                        List<Integer> cpuNodes = kernelSs.getSubAttributes(cpuNode, false);
+
+                        // disk Part *******************************************************
+                        System.out.println("Disk Analyzing ...");
+                        for (Integer tidQuark : diskNodes) {
+                            Map<String,Map<String,Double>> vmStatistics = new HashMap<>();
+                            Map<String,Double> statistics = new HashMap<>();
+                            Long sum = 0L;
+                            int count = 0;
+                            double std = 0.0;
+
+                            int readQuark = kernelSs.getQuarkRelative(tidQuark, "read");
+                            int readSTATUS = kernelSs.getQuarkRelative(readQuark, "STATUS");
+                            int totalTransfer = kernelSs.getQuarkRelative(readQuark, "totalTransfer");
+                            int latency = kernelSs.getQuarkRelative(readQuark, "latency");
+                            List<ITmfStateInterval> StatusIntervals;
+                            StatusIntervals = StateSystemUtils.queryHistoryRange(kernelSs, readSTATUS, kernelSs.getStartTime(),kernelSs.getCurrentEndTime());
+                            for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                if (StatusInterval.getStateValue().unboxInt() == 3){
+                                    sum += StatusInterval.getEndTime()-StatusInterval.getStartTime();
+                                    count ++;
+                                }
+                            }
+                            for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                if (StatusInterval.getStateValue().unboxInt() == 3){
+                                    std += Math.pow(StatusInterval.getEndTime()-StatusInterval.getStartTime() - sum/count,2) ;
+                                }
+                            }
+                            List<ITmfStateInterval> tts = StateSystemUtils.queryHistoryRange(kernelSs, totalTransfer, kernelSs.getCurrentEndTime()-1, kernelSs.getCurrentEndTime());
+                            for (ITmfStateInterval tt : tts) {
+                                statistics.put("transfer", (Math.pow(10, 9))*tt.getStateValue().unboxLong()/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                            }
+                            List<ITmfStateInterval> tls =  StateSystemUtils.queryHistoryRange(kernelSs, latency, kernelSs.getCurrentEndTime()-1, kernelSs.getCurrentEndTime());
+                            for (ITmfStateInterval tl : tls) {
+                                statistics.put("latency", (double)tl.getStateValue().unboxLong()/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                            }
+                            statistics.put("avg", (double)sum/(count));
+                            statistics.put("std", Math.sqrt(std/count));
+                            statistics.put("count",(Math.pow(10, 9))*count/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                            vmStatistics.put("diskRead", statistics);
+                            disk.put(kernelSs.getAttributeName(tidQuark), vmStatistics);
+                            System.out.println(kernelSs.getAttributeName(tidQuark) + ": Avg = " + sum/count +"  Std = "+ Math.sqrt(std/count));
+                        }
+                     // Net Part *******************************************************
+                        System.out.println("Net Analyzing ...");
+                        for (Integer tidQuark : netNodes) {
+                            Map<String,Map<String,Double>> vmStatistics = new HashMap<>();
+                            Map<String,Double> statistics = new HashMap<>();
+                            Long sum = 0L;
+                            int count = 0;
+                            double std = 0.0;
+
+                            int netQuark = kernelSs.getQuarkRelative(tidQuark, "STATUS");
+
+                            int totalTransferDev = kernelSs.getQuarkRelative(tidQuark, "tNetdev");
+                            int totalTransferIf = kernelSs.getQuarkRelative(tidQuark, "tNetif");
+
+                            List<ITmfStateInterval> StatusIntervals;
+                            StatusIntervals = StateSystemUtils.queryHistoryRange(kernelSs, netQuark, kernelSs.getStartTime(),kernelSs.getCurrentEndTime());
+                            for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                if (StatusInterval.getStateValue().unboxInt() == 1){
+                                    sum += StatusInterval.getEndTime()-StatusInterval.getStartTime();
+                                    count ++;
+                                }
+                            }
+                            for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                if (StatusInterval.getStateValue().unboxInt() == 1){
+                                    std += Math.pow(StatusInterval.getEndTime()-StatusInterval.getStartTime() - sum/count,2) ;
+                                }
+                            }
+                            List<ITmfStateInterval> tts = StateSystemUtils.queryHistoryRange(kernelSs, totalTransferDev, kernelSs.getCurrentEndTime()-1, kernelSs.getCurrentEndTime());
+                            for (ITmfStateInterval tt : tts) {
+                                statistics.put("tDev", (Math.pow(10, 9))*tt.getStateValue().unboxLong()/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                            }
+                            List<ITmfStateInterval> tls =  StateSystemUtils.queryHistoryRange(kernelSs, totalTransferIf, kernelSs.getCurrentEndTime()-1, kernelSs.getCurrentEndTime());
+                            for (ITmfStateInterval tl : tls) {
+                                statistics.put("tIf", (Math.pow(10, 9))*tl.getStateValue().unboxLong()/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                            }
+                            statistics.put("avg", (double) sum/(count));
+                            statistics.put("std",  Math.sqrt(std/count));
+                            statistics.put("count", (Math.pow(10, 9))*count/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                            vmStatistics.put("net", statistics);
+                            net.put(kernelSs.getAttributeName(tidQuark), vmStatistics);
+                            System.out.println(kernelSs.getAttributeName(tidQuark) + ": Avg = " + sum/count);
+                        }
+
+                        // CPU Part *******************************************************
+                        System.out.println("CPU Analyzing ...");
+                        for (Integer tidQuark : cpuNodes) {
+                            Map<String,Map<String,Double>> vmStatistics = new HashMap<>();
+                            Map<String,Double> statistics = new HashMap<>();
+                            Long sum = 0L;
+                            int count = 0;
+                            double std = 0.0;
+
+                            int cpuQuark = kernelSs.getQuarkRelative(tidQuark, "vCPU");
+                            List<Integer> vcpuNodes = kernelSs.getSubAttributes(cpuQuark, false);
+                            for (Integer vcpuNode : vcpuNodes) {
+                                int status = kernelSs.getQuarkRelative(vcpuNode, "STATUS");
+                                List<ITmfStateInterval> StatusIntervals;
+                                StatusIntervals = StateSystemUtils.queryHistoryRange(kernelSs, status, kernelSs.getStartTime(),kernelSs.getCurrentEndTime());
+                                for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                    if (StatusInterval.getStateValue().unboxInt() >= 1){
+                                        sum += StatusInterval.getEndTime()-StatusInterval.getStartTime();
+                                        count ++;
+                                    }
+                                }
+                                for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                    if (StatusInterval.getStateValue().unboxInt() >= 1){
+                                        std += Math.pow(StatusInterval.getEndTime()-StatusInterval.getStartTime() - sum/count,2) ;
+                                    }
+                                }
+                            }
+
+
+                            int delayNode = kernelSs.getQuarkAbsolute("DelayCPU");
+
+                            Integer currentDelayThread = kernelSs.getQuarkRelative(delayNode, "preempting"); //$NON-NLS-1$
+                            List<Integer> quarksList = kernelSs.getSubAttributes(currentDelayThread, false);
+                            for (Integer vm:quarksList){
+                                List<ITmfStateInterval> StatusIntervals;
+                                StatusIntervals = StateSystemUtils.queryHistoryRange(kernelSs, vm, kernelSs.getCurrentEndTime()-1,kernelSs.getCurrentEndTime());
+                                double preemptedValuetmp = 0.0;
+                                for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                    preemptedValuetmp = StatusInterval.getStateValue().unboxLong();
+                                    preemptedValue.put(kernelSs.getAttributeName(vm), preemptedValuetmp/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                                }
+
+                                String vmThread = kernelSs.getAttributeName(vm);
+                                Integer quark = kernelSs.getQuarkRelative(vm, "VM"); //$NON-NLS-1$
+                                List<Integer> preemptingVMsList = kernelSs.getSubAttributes(quark, false);
+                                double preemtingValue = 0.0;
+                                Map<String, Double> tmpValue = new HashMap<>();
+                                for (Integer preemptingVMList:preemptingVMsList){
+                                    StatusIntervals = StateSystemUtils.queryHistoryRange(kernelSs, preemptingVMList, kernelSs.getCurrentEndTime()-1,kernelSs.getCurrentEndTime());
+                                    for (ITmfStateInterval StatusInterval : StatusIntervals) {
+                                        preemtingValue = StatusInterval.getStateValue().unboxLong();
+                                        tmpValue.put(kernelSs.getAttributeName(preemptingVMList), preemtingValue/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                                    }
+
+                                    double lastPreemptingValue = 0.0;
+                                    if (preemptingVMsValue.containsKey(kernelSs.getAttributeName(preemptingVMList))){
+                                        lastPreemptingValue = preemptingVMsValue.get(kernelSs.getAttributeName(preemptingVMList));
+                                    }
+                                    preemptingVMsValue.put(kernelSs.getAttributeName(preemptingVMList), preemtingValue/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime())+lastPreemptingValue);
+
+                                }
+                                preemptedVMsValue.put(vmThread,tmpValue);
+                            }
+
+                            System.out.println(kernelSs.getAttributeName(tidQuark) + ": Avg = " + sum/count + "  Std = " + + Math.sqrt(std/count));
+                            statistics.put("avg", (double)sum/(count));
+                            statistics.put("std",  Math.sqrt(std/count));
+                            statistics.put("count", (Math.pow(10, 9))*count/(kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+
+                            vmStatistics.put("cpu", statistics);
+
+                            vcpu.put(kernelSs.getAttributeName(tidQuark), vmStatistics);
+                        }
+
+                        // Memory Part ****************************************************
+                    } catch (AttributeNotFoundException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (StateSystemDisposedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    System.out.println((kernelSs.getCurrentEndTime()-kernelSs.getStartTime()));
+                    System.out.println(preemptedValue);
+                    System.out.println(preemptedVMsValue);
+                    System.out.println(preemptingVMsValue);
+                    System.out.println(disk);
+                    System.out.println(vcpu);
+                    System.out.println(net);
+
+
+                }
+            }
+        };
+
         final IAction showSearchBarAction = new Action(Messages.TmfEventsTable_ShowSearchBarActionText) {
             @Override
             public void run() {
@@ -1263,7 +1481,8 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
                 }
                 fTablePopupMenuManager.add(exportToTextAction);
                 fTablePopupMenuManager.add(new Separator());
-
+                fTablePopupMenuManager.add(haniTest);
+                fTablePopupMenuManager.add(new Separator());
                 if (item != null) {
                     final Object data = item.getData();
                     Separator separator = null;
