@@ -82,6 +82,10 @@ public interface IKernelAnalysisEventLayout {
     String eventKVMEntry();
     String eventKVMExit();
     String eventVCPUEnterGuest();
+    /**
+     * @since 2.0
+     */
+    String eventKVMNestedVMExit();
     // ------------------------------------------------------------------------
     // Event field names
     // ------------------------------------------------------------------------

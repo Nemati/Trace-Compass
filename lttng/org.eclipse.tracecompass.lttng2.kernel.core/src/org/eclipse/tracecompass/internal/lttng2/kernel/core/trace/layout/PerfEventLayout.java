@@ -54,6 +54,10 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
      * @since 2.0
      */
     @Override
+    public String eventKVMNestedVMExit() {
+        return "kvm_nested_vmexit"; //$NON-NLS-1$
+    }
+    @Override
     public String eventKVMEntry() {
         return "kvm_entry"; //$NON-NLS-1$
     }

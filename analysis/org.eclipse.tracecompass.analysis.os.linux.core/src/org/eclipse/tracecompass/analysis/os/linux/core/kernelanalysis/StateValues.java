@@ -49,6 +49,8 @@ public interface StateValues {
      * @since 2.0
      */
     int VCPU_WAIT_FOR_PCPU = 8;
+    int CPU_STATUS_VMX_NESTED_ROOT = 11;
+    int CPU_STATUS_VMX_NESTED_NON_ROOT = 12;
     /**
      * @since 2.0
      */
@@ -58,6 +60,8 @@ public interface StateValues {
 
     ITmfStateValue CPU_STATUS_VMX_ROOT_DISK_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_ROOT_DISK);
     ITmfStateValue CPU_STATUS_VMX_ROOT_NET_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_ROOT_NET);
+    ITmfStateValue CPU_STATUS_VMX_NESTED_ROOT_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_NESTED_ROOT);
+    ITmfStateValue CPU_STATUS_VMX_NESTED_NON_ROOT_VALUE = TmfStateValue.newValueInt(CPU_STATUS_VMX_NESTED_NON_ROOT);
     /**
      * @since 2.0
      */

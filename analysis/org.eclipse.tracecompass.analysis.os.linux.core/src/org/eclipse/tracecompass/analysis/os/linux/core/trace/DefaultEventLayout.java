@@ -49,7 +49,7 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String KVM_ENTRY =  "kvm_entry"; //$NON-NLS-1$
     private static final String KVM_EXIT =  "kvm_exit"; //$NON-NLS-1$
     private static final String VCPU_ENTER_GUEST =  "addons_vcpu_enter_guest"; //$NON-NLS-1$
-
+    private static final String KVM_NESTED_VMEXIT = "kvm_nested_vmexit"; //$NON-NLS-1$
     private static final Collection<String> SCHED_WAKEUP_EVENTS =
             checkNotNull(ImmutableList.of("sched_wakeup", "sched_wakeup_new")); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -198,6 +198,11 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     public String eventVCPUEnterGuest() {
         return VCPU_ENTER_GUEST;
     }
+    @Override
+    public String eventKVMNestedVMExit() {
+        return     KVM_NESTED_VMEXIT;
+    }
+
 
 
     // completed IO

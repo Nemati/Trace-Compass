@@ -85,6 +85,26 @@
         </filter>
         <filter id="1211105284">
             <message_arguments>
+                <message_argument value="CPU_STATUS_VMX_NESTED_NON_ROOT"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_STATUS_VMX_NESTED_NON_ROOT_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_STATUS_VMX_NESTED_ROOT"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="CPU_STATUS_VMX_NESTED_ROOT_VALUE"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
                 <message_argument value="CPU_STATUS_VMX_NON_ROOT_VALUE"/>
             </message_arguments>
         </filter>
@@ -279,6 +299,11 @@
         </filter>
         <filter id="1143996420">
             <message_arguments>
+                <message_argument value="eventKVMNestedVMExit()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
                 <message_argument value="eventNetDev()"/>
             </message_arguments>
         </filter>
@@ -326,6 +351,11 @@
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="eventKVMExit()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventKVMNestedVMExit()"/>
             </message_arguments>
         </filter>
         <filter id="1211105284">

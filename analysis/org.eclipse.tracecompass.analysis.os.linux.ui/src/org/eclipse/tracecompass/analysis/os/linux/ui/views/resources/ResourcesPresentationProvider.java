@@ -85,7 +85,9 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         VMX_Non_Root (new RGB (139,69,19)),
         VMX_Root (new RGB (218,165,32)),
         VMX_Root_Disk (new RGB (128,205,193)),
-        VMX_Root_Net (new RGB (1,133,113));
+        VMX_Root_Net (new RGB (1,133,113)),
+        VMX_NESTED_ROOT (new RGB(231,41,138)),
+        VMX_NESTED_NON_ROOT (new RGB(117,112,179));
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -129,6 +131,10 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return State.VMX_Root_Disk;
                 }else if (value == StateValues.CPU_STATUS_VMX_ROOT_NET) {
                     return State.VMX_Root_Net;
+                }else if (value == StateValues.CPU_STATUS_VMX_NESTED_ROOT) {
+                    return State.VMX_NESTED_ROOT;
+                }else if (value == StateValues.CPU_STATUS_VMX_NESTED_NON_ROOT) {
+                    return State.VMX_NESTED_NON_ROOT;
                 }
 
             } else if (entry.getType() == Type.IRQ) {
@@ -449,7 +455,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                             /* Ignored */
                         }
                     }
-                    else if (status == StateValues.CPU_STATUS_VMX_NON_ROOT || status == StateValues.CPU_STATUS_VMX_ROOT) {
+                    else if (status == StateValues.CPU_STATUS_VMX_NON_ROOT || status == StateValues.CPU_STATUS_VMX_ROOT ||status == StateValues.CPU_STATUS_VMX_NESTED_ROOT || status == StateValues.CPU_STATUS_VMX_NESTED_NON_ROOT ) {
                         // In running state get the current tid
 
                         try {
@@ -532,7 +538,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                 } else  if (value.unboxInt()==3){
                                     retMap.put("T-State-IN","SYSCALL"); //$NON-NLS-1$ //$NON-NLS-2$
                                 }
-                                if (status == StateValues.CPU_STATUS_VMX_ROOT){
+                                if (status == StateValues.CPU_STATUS_VMX_ROOT || status == StateValues.CPU_STATUS_VMX_NESTED_ROOT){
                                     int exitQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "exit_reason"); //$NON-NLS-1$
                                     interval = ss.querySingleState(hoverTime, exitQuark);
                                     if (!interval.getStateValue().isNull()) {
@@ -567,8 +573,24 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                             retMap.put("Exit Reason","Task Switch");  //$NON-NLS-1$ //$NON-NLS-2$
                                             break;
                                         }
+                                        case 10: {
+                                            retMap.put("Exit Reason","CPUID");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
                                         case 12: {
                                             retMap.put("Exit Reason","HLT exiting");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
+                                        case 21:{
+                                            retMap.put("Exit Reason","VMPTRLD");  //$NON-NLS-1$ //$NON-NLS-2$
+                                         break;
+                                        }
+                                        case 20: {
+                                            retMap.put("Exit Reason","VM LUNCH");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
+                                        case 24: {
+                                            retMap.put("Exit Reason","VM RESUME");  //$NON-NLS-1$ //$NON-NLS-2$
                                             break;
                                         }
                                         case 28: {
@@ -605,6 +627,10 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                         }
                                         case 48: {
                                             retMap.put("Exit Reason","EPT violation");  //$NON-NLS-1$ //$NON-NLS-2$
+                                            break;
+                                        }
+                                        case 55: {
+                                            retMap.put("Exit Reason","XSETBV");  //$NON-NLS-1$ //$NON-NLS-2$
                                             break;
                                         }
                                         default : {

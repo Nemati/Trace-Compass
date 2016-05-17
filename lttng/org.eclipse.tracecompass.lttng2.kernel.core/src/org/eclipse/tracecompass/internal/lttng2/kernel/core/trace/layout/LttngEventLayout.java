@@ -50,7 +50,7 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     private static final String NET_IF = "netif_rx"; //$NON-NLS-1$
     private static final String NET_DEV = "net_dev_xmit"; //$NON-NLS-1$
     private static final String VCPU_ENTER_GUEST =  "addons_vcpu_enter_guest"; //$NON-NLS-1$
-
+    private static final String KVM_NESTED_VMEXIT = "kvm_nested_vmexit"; //$NON-NLS-1$
     private static final Collection<String> SCHED_WAKEUP_EVENTS =
             checkNotNull(ImmutableList.of("sched_wakeup", "sched_wakeup_new"));
 
@@ -199,7 +199,10 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     public String eventVCPUEnterGuest() {
         return VCPU_ENTER_GUEST;
     }
-
+    @Override
+    public String eventKVMNestedVMExit() {
+        return     KVM_NESTED_VMEXIT;
+    }
     // completed IO
     /**
      * @return complete_io
