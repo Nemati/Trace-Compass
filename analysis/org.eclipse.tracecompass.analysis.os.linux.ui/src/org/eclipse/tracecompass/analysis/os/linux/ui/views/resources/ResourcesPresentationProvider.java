@@ -82,12 +82,16 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         CPU_Qemu_Busy_FOUR (new RGB (100,0,0)),
         CPU_Qemu_Busy_MANY (new RGB (50,0,0)),
         Net_Qemu_Busy (new RGB (255,20,147)),
-        VMX_Non_Root (new RGB (139,69,19)),
-        VMX_Root (new RGB (218,165,32)),
+        VMX_Non_Root (new RGB (166,86,40)),
+        VMX_Root (new RGB (255,127,0)),
         VMX_Root_Disk (new RGB (128,205,193)),
         VMX_Root_Net (new RGB (1,133,113)),
-        VMX_NESTED_ROOT (new RGB(231,41,138)),
-        VMX_NESTED_NON_ROOT (new RGB(117,112,179));
+        VMX_NESTED_ROOT (new RGB(255,127,0)),
+        VMX_NESTED_L1_PREEMPTED (new RGB(55,126,184)),
+        VMX_NESTED_L0_PREEMPTED (new RGB(152,78,163)),
+        VMX_NESTED_NON_ROOT (new RGB(228,26,28)),
+        vCPU_WAIT_PCPU (new RGB(99,99,99));
+
         public final RGB rgb;
 
         private State(RGB rgb) {
@@ -135,6 +139,12 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                     return State.VMX_NESTED_ROOT;
                 }else if (value == StateValues.CPU_STATUS_VMX_NESTED_NON_ROOT) {
                     return State.VMX_NESTED_NON_ROOT;
+                }else if (value == StateValues.L1_PREEMPTED) {
+                    return State.VMX_NESTED_L1_PREEMPTED;
+                }else if (value == StateValues.L0_PREEMPTED) {
+                    return State.VMX_NESTED_L0_PREEMPTED;
+                } else if (value == StateValues.VCPU_WAIT_FOR_PCPU){
+                    return State.vCPU_WAIT_PCPU;
                 }
 
             } else if (entry.getType() == Type.IRQ) {

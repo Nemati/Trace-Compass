@@ -44,7 +44,9 @@ public interface StateValues {
      * @since 2.0
      */
     int CPU_STATUS_VMX_ROOT_NET = 10;
-    int PREEMPTED = 7;
+    int L0_PREEMPTED = 13;
+    int L1_PREEMPTED = 14;
+    int PREEMPTED = 15;
     /**
      * @since 2.0
      */
@@ -71,6 +73,8 @@ public interface StateValues {
      * @since 2.0
      */
     ITmfStateValue  PREEMPTED_VALUE = TmfStateValue.newValueInt( PREEMPTED);
+    ITmfStateValue  L0_PREEMPTED_VALUE = TmfStateValue.newValueInt( L0_PREEMPTED);
+    ITmfStateValue  L1_PREEMPTED_VALUE = TmfStateValue.newValueInt( L1_PREEMPTED);
     ITmfStateValue CPU_STATUS_IDLE_VALUE = TmfStateValue.newValueInt(CPU_STATUS_IDLE);
     ITmfStateValue CPU_STATUS_RUN_USERMODE_VALUE = TmfStateValue.newValueInt(CPU_STATUS_RUN_USERMODE);
     ITmfStateValue CPU_STATUS_RUN_SYSCALL_VALUE = TmfStateValue.newValueInt(CPU_STATUS_RUN_SYSCALL);

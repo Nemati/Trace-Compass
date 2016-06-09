@@ -18,5 +18,15 @@
                 <message_argument value="IOQemuWrite"/>
             </message_arguments>
         </filter>
+        <filter id="1177550852">
+            <message_arguments>
+                <message_argument value="NestedVM"/>
+            </message_arguments>
+        </filter>
+        <filter id="1177550852">
+            <message_arguments>
+                <message_argument value="VM"/>
+            </message_arguments>
+        </filter>
     </resource>
 </component>

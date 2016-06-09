@@ -55,7 +55,13 @@ public class ResourcesEntry extends TimeGraphEntry implements Comparable<ITimeGr
         /** Entries for IRQs */
         IRQ,
         /** Entries for Soft IRQ */
-        SOFT_IRQ
+        SOFT_IRQ,
+        /**
+         *  For nested VM
+         * @since 1.1
+         */
+        NestedVM,
+        VM
 
     }
 
