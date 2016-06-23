@@ -270,19 +270,27 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         int threadPTID = thread1;
         try {
             if (!tidToPtid.containsKey(thread1)) {
-            final ITmfStateSystemBuilder ss = checkNotNull(getStateSystemBuilder());
-            int currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread1));
-            int quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
-            ITmfStateValue value = ss.queryOngoingState(quark);
-            Integer PTID = value.isNull() ? 0 : value.unboxInt();
-            int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
+                final ITmfStateSystemBuilder ss = checkNotNull(getStateSystemBuilder());
+                int currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread1));
+                int quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
+                ITmfStateValue value = ss.queryOngoingState(quark);
+                Integer PTID = value.isNull() ? 0 : value.unboxInt();
 
+                int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
+                String execName ;
                 while (PTID != 1 && PTID !=0) {
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                    int quarkName = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.EXEC_NAME);
                     newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                     value = ss.queryOngoingState(quark);
+                    value = ss.queryOngoingState(quarkName);
+                    execName = value.isNull() ? "0" : value.unboxStr();
+                    if (execName.equals("libvirtd")){ //$NON-NLS-1$
+                        break;
+                    }
                     threadPTID = PTID;
                     PTID = value.isNull() ? 0 : value.unboxInt();
+
                 }
                 if (threadPTID == 0) {
                     return 0;
@@ -507,12 +515,20 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
                     int threadPTID = thread;
                     if (!tidToPtid.containsKey(thread)) {
+                        String execName ;
                         while (PTID != 1 && PTID !=0) {
                             quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                            int quarkName = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.EXEC_NAME);
                             newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                             value = ss.queryOngoingState(quark);
+                            value = ss.queryOngoingState(quarkName);
+                            execName = value.isNull() ? "0" : value.unboxStr();
+                            if (execName.equals("libvirtd")){ //$NON-NLS-1$
+                                break;
+                            }
                             threadPTID = PTID;
                             PTID = value.isNull() ? 0 : value.unboxInt();
+
                         }
                         if (PTID == 0) {
                             break;
@@ -590,17 +606,17 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                             int quarkVM = ss.getQuarkAbsoluteAndAdd("vmName"); //$NON-NLS-1$
                             int vmThreadQuark = ss.getQuarkRelativeAndAdd(quarkVM, "testU1"); //$NON-NLS-1$
 
-                                int nestedVMQuark = ss.getQuarkRelativeAndAdd(vmThreadQuark,nestedVM.get(thread).VM.toString() ); //$NON-NLS-1$
-                                quark = ss.getQuarkRelativeAndAdd(currentThreadNode, "vcpu"); //$NON-NLS-1$
-                                value = ss.queryOngoingState(quark);
-                                String vcpu_id = value.toString();
-                                int nestedVMCPUQuark = ss.getQuarkRelativeAndAdd(nestedVMQuark,vcpu_id);//$NON-NLS-1$
-                                int nestedVMAppQuark = ss.getQuarkRelativeAndAdd(nestedVMCPUQuark,"process");
-                                value = TmfStateValue.newValueLong(cr3tmp);
-                                ss.modifyAttribute(nestedVM.get(thread).lastExit.ts, value, nestedVMAppQuark);
-                                int nestedVMStatusQuark = ss.getQuarkRelativeAndAdd(nestedVMCPUQuark,Attributes.STATUS);//$NON-NLS-1$
-                                value = StateValues.CPU_STATUS_VMX_ROOT_VALUE;
-                                ss.modifyAttribute(nestedVM.get(thread).lastExit.ts, value, nestedVMStatusQuark);
+                            int nestedVMQuark = ss.getQuarkRelativeAndAdd(vmThreadQuark,nestedVM.get(thread).VM.toString() ); //$NON-NLS-1$
+                            quark = ss.getQuarkRelativeAndAdd(currentThreadNode, "vcpu"); //$NON-NLS-1$
+                            value = ss.queryOngoingState(quark);
+                            String vcpu_id = value.toString();
+                            int nestedVMCPUQuark = ss.getQuarkRelativeAndAdd(nestedVMQuark,vcpu_id);//$NON-NLS-1$
+                            int nestedVMAppQuark = ss.getQuarkRelativeAndAdd(nestedVMCPUQuark,"process");
+                            value = TmfStateValue.newValueLong(cr3tmp);
+                            ss.modifyAttribute(nestedVM.get(thread).lastExit.ts, value, nestedVMAppQuark);
+                            int nestedVMStatusQuark = ss.getQuarkRelativeAndAdd(nestedVMCPUQuark,Attributes.STATUS);//$NON-NLS-1$
+                            value = StateValues.CPU_STATUS_VMX_ROOT_VALUE;
+                            ss.modifyAttribute(nestedVM.get(thread).lastExit.ts, value, nestedVMStatusQuark);
 
                         }
                     } else {
@@ -627,7 +643,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                             if (threadPTID==0){
                                 break;
                             }
-/*
+                            /*
                             currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
                             quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
                             value = ss.queryOngoingState(quark);
@@ -681,7 +697,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                             if (threadPTID==0){
                                 break;
                             }
-/*                            currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
+                            /*                            currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
                             quark = ss.getQuarkRelativeAndAdd(currentThreadCPU, Attributes.PPID);
                             value = ss.queryOngoingState(quark);
                             Integer PTID = value.isNull() ? 0 : value.unboxInt();
@@ -743,10 +759,17 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                 int threadPTID = thread;
                 if (!tidToPtid.containsKey(thread) ) {
+                    String execName ;
                     while (PTID != 1 && PTID !=0) {
                         quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                        int quarkName = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.EXEC_NAME);
                         newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                         value = ss.queryOngoingState(quark);
+                        value = ss.queryOngoingState(quarkName);
+                        execName = value.isNull() ? "0" : value.unboxStr();
+                        if (execName.equals("libvirtd")){ //$NON-NLS-1$
+                            break;
+                        }
                         threadPTID = PTID;
                         PTID = value.isNull() ? 0 : value.unboxInt();
 
@@ -924,12 +947,20 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     timeForIO.put(thread,ts);
                 }
                 if (!tidToPtid.containsKey(thread)) {
+                    String execName ;
                     while (PTID != 1 && PTID !=0) {
                         quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                        int quarkName = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.EXEC_NAME);
                         newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                         value = ss.queryOngoingState(quark);
+                        value = ss.queryOngoingState(quarkName);
+                        execName = value.isNull() ? "0" : value.unboxStr();
+                        if (execName.equals("libvirtd")){ //$NON-NLS-1$
+                            break;
+                        }
                         threadPTID = PTID;
                         PTID = value.isNull() ? 0 : value.unboxInt();
+
                     }
                     if (PTID == 0) {
                         break;
@@ -1204,7 +1235,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 if (threadPTID==0){
                     break;
                 }
-/*                int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
+                /*                int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(thread));
 
                 quark = ss.getQuarkRelativeAndAdd(currentThreadIO, Attributes.PPID);
                 value = ss.queryOngoingState(quark);
@@ -1228,8 +1259,8 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 } else {
                     threadPTID = tidToPtid.get(thread);
                 }*/
-//                int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeIO(ss), String.valueOf(threadPTID));
-//
+                //                int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeIO(ss), String.valueOf(threadPTID));
+                //
 
                 ITmfEventField content = event.getContent();
                 String reqNumber = content.getField("req").getValue().toString(); //$NON-NLS-1$
@@ -1627,7 +1658,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(currentCPUNode, Attributes.CURRENT_THREAD);
                 value = TmfStateValue.newValueInt(nextTid);
                 ss.modifyAttribute(ts, value, quark);
-                if (prevProcessName.equals("qemu-system-x86")){ //$NON-NLS-1$
+                if (prevProcessName.equals("qemu-system-x86")||prevProcessName.equals("qemu-kvm")){ //$NON-NLS-1$
                     int threadPTID = 0;
                     if (!tidToPtid.containsKey(prevTid) ) {
                         threadPTID = getVMPTID(prevTid);
@@ -1640,7 +1671,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                         threadPTID = tidToPtid.get(prevTid);
                     }
 
-/*                    quark = ss.getQuarkRelativeAndAdd(formerThreadNode, Attributes.PPID);
+                    /*                    quark = ss.getQuarkRelativeAndAdd(formerThreadNode, Attributes.PPID);
                     value = ss.queryOngoingState(quark);
                     Integer PTID = value.isNull() ? 0 : value.unboxInt();
                     int currentThreadCPU = 0;
@@ -1854,7 +1885,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
 
                 }
-                if (nextProcessName.equals("qemu-system-x86")){ //$NON-NLS-1$
+                if (nextProcessName.equals("qemu-system-x86")||nextProcessName.equals("qemu-kvm")){ //$NON-NLS-1$
                     Integer currentDelayThread = ss.getQuarkRelativeAndAdd(getNodeDelayQemu(ss), "preempting"); //$NON-NLS-1$
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, "exit_reason"); //$NON-NLS-1$
                     value = ss.queryOngoingState(quark);
@@ -1961,7 +1992,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                         threadPTID = tidToPtid.get(nextTid);
                     }
 
- /*                   quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.PPID);
+                    /*                   quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.PPID);
                     value = ss.queryOngoingState(quark);
                     Integer PTID = value.isNull() ? 0 : value.unboxInt();
                     int currentThreadCPU = 0;
@@ -2423,12 +2454,20 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                     int threadPTID = thread;
                     if (!tidToPtid.containsKey(thread)) {
+                        String execName ;
                         while (PTID != 1 && PTID !=0) {
                             quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                            int quarkName = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.EXEC_NAME);
                             newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                             value = ss.queryOngoingState(quark);
+                            value = ss.queryOngoingState(quarkName);
+                            execName = value.isNull() ? "0" : value.unboxStr();
+                            if (execName.equals("libvirtd")){ //$NON-NLS-1$
+                                break;
+                            }
                             threadPTID = PTID;
                             PTID = value.isNull() ? 0 : value.unboxInt();
+
                         }
                         if (PTID == 0) {
                             break;
@@ -2459,7 +2498,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
                     }
                 }
-                if (processName.equals("qemu-system-x86")){ //$NON-NLS-1$
+                if (processName.equals("qemu-system-x86")||processName.equals("qemu-kvm")){ //$NON-NLS-1$
 
                     Integer newCurrentThreadNode = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(tid));
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.PPID);
@@ -2468,12 +2507,20 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                     int newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                     int threadPTID = tid;
                     if (!tidToPtid.containsKey(tid)) {
+                        String execName ;
                         while (PTID != 1 && PTID !=0) {
                             quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.PPID);
+                            int quarkName = ss.getQuarkRelativeAndAdd(newCurrentThreadNodeTmp, Attributes.EXEC_NAME);
                             newCurrentThreadNodeTmp = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), PTID.toString());
                             value = ss.queryOngoingState(quark);
+                            value = ss.queryOngoingState(quarkName);
+                            execName = value.isNull() ? "0" : value.unboxStr();
+                            if (execName.equals("libvirtd")){ //$NON-NLS-1$
+                                break;
+                            }
                             threadPTID = PTID;
                             PTID = value.isNull() ? 0 : value.unboxInt();
+
                         }
                         if (PTID == 0) {
                             break;
