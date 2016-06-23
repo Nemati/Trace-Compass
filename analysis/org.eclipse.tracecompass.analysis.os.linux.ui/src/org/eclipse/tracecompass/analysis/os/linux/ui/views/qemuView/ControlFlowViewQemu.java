@@ -361,7 +361,7 @@ protected void buildEventList(final ITmfTrace trace, final ITmfTrace parentTrace
 
                         if ((!execNameInterval.getStateValue().isNull() &&
                                 execNameInterval.getStateValue().getType() == ITmfStateValue.Type.STRING) &&
-                                (execNameInterval.getStateValue().unboxStr().equals("qemu-system-x86")||execNameInterval.getStateValue().unboxStr().contains("vhost") )) {
+                                (execNameInterval.getStateValue().unboxStr().equals("qemu-system-x86")||execNameInterval.getStateValue().unboxStr().equals("qemu-kvm")||execNameInterval.getStateValue().unboxStr().contains("vhost") )) {
                             String execName = execNameInterval.getStateValue().unboxStr();
                             int ppid = ppidInterval.getStateValue().unboxInt();
                             ControlFlowEntryQemu entry = entryMap.get(threadId);
