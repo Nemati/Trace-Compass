@@ -69,7 +69,10 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
     public String eventVCPUEnterGuest() {
         return "addons_vcpu_enter_guest"; //$NON-NLS-1$
     }
-
+    @Override
+    public String eventKVMAPICAccept_IRQ(){
+        return "kvm_apic_accept_irq"; //$NON-NLS-1$
+    }
     @Override
     public String eventCompleteIO() {
         return "qemu:thread_pool_complete"; //$NON-NLS-1$

@@ -309,6 +309,11 @@
         </filter>
         <filter id="1143996420">
             <message_arguments>
+                <message_argument value="eventKVMAPICAccept_IRQ()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
                 <message_argument value="eventKVMEntry()"/>
             </message_arguments>
         </filter>
@@ -361,6 +366,11 @@
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="eventCompleteIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventKVMAPICAccept_IRQ()"/>
             </message_arguments>
         </filter>
         <filter id="1211105284">

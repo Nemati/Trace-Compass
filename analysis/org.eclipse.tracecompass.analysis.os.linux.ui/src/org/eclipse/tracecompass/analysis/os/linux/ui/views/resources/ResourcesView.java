@@ -138,7 +138,7 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
         TimeGraphEntry traceEntryVM = null;
         ResourcesEntry nestedVMEntry = null;
         ResourcesEntry VMEntry = null;
-       // ResourcesEntry VM = null;
+        // ResourcesEntry VM = null;
         //TimeGraphEntry containersEntry = null;
         long startTime = ssq.getStartTime();
         long start = startTime;
@@ -205,13 +205,17 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
             } else {
                 traceEntryVM.updateEndTime(endTime);
             }
-            List<Integer> VMQuarks = ssq.getQuarks("CPUQemu","*");
+            List<Integer> VMQuarks = ssq.getQuarks("CPUQemu","*");//$NON-NLS-1$ //$NON-NLS-2$
             for (Integer VMQuark:VMQuarks){
 
                 VMEntry = entryMap.get(VMQuark);
                 int vm = (int)Long.parseLong(ssq.getAttributeName(VMQuark));
+
+                String vmName = namePIDmap.get(ssq.getAttributeName(VMQuark));
+
                 if(VMEntry == null) {
-                    VMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,ssq.getAttributeName(VMQuark)); //$NON-NLS-1$
+                    //VMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,ssq.getAttributeName(VMQuark)); //$NON-NLS-1$
+                    VMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,vmName); //$NON-NLS-1$
                     traceEntryVM.addChild(VMEntry);
                     entryMap.put(VMQuark, VMEntry);
                 } else {
@@ -219,15 +223,15 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                 }
 
                 //if(nestedVMEntry == null) {
-                    nestedVMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,"vCPU" ); //$NON-NLS-1$
-                     VMEntry.addChild(nestedVMEntry);
-                     entryMap.put(10000, nestedVMEntry);
+                nestedVMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,"vCPU" ); //$NON-NLS-1$
+                VMEntry.addChild(nestedVMEntry);
+                entryMap.put(10000, nestedVMEntry);
                 // }
                 //else {
-                 //    nestedVMEntry.updateEndTime(endTime);
-                 //}
+                //    nestedVMEntry.updateEndTime(endTime);
+                //}
 
-                List<Integer> vCPUVMQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"vCPU","*");
+                List<Integer> vCPUVMQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"vCPU","*"); //$NON-NLS-1$ //$NON-NLS-2$
                 for (Integer cpuQuark : vCPUVMQuarks) {
                     int cpu = Integer.parseInt(ssq.getAttributeName(cpuQuark));
                     ResourcesEntry entry = entryMap.get(cpuQuark);
@@ -239,37 +243,39 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                         entry.updateEndTime(endTime);
                     }
                 }
-                if (ssq.getAttributeName(VMQuark).equals("3547")){
-                    List<Integer> nestedVMQuarks = ssq.getQuarks("vmName","testU1","*"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-                    for (Integer nestedVMQuark:nestedVMQuarks){
-                        List<Integer> cpuQuarks = ssq.getQuarks("vmName","testU1",ssq.getAttributeName(nestedVMQuark),"*"); //$NON-NLS-1$
-                        if (ssq.getAttributeName(nestedVMQuark).equals("0")){
-                            continue;
-                        }
-                        nestedVMEntry = entryMap.get(nestedVMQuark);
+                //if (ssq.getAttributeName(VMQuark).equals("3547")){
+                List<Integer> nestedVMQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"nestedVM","*"); //$NON-NLS-1$ //$NON-NLS-2$
+                // List<Integer> nestedVMQuarks = ssq.getQuarks("vmName","testU1","*"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+                for (Integer nestedVMQuark:nestedVMQuarks){
+                    //List<Integer> cpuQuarks = ssq.getQuarks("vmName","testU1",ssq.getAttributeName(nestedVMQuark),"*"); //$NON-NLS-1$
+                    List<Integer> cpuQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"nestedVM",ssq.getAttributeName(nestedVMQuark),"*");
+                    if (ssq.getAttributeName(nestedVMQuark).equals("0")){
+                        continue;
+                    }
+                    nestedVMEntry = entryMap.get(nestedVMQuark);
 
 
-                        if(nestedVMEntry == null) {
-                            int nested = (int)Long.parseLong(ssq.getAttributeName(nestedVMQuark));
-                            nestedVMEntry = new ResourcesEntry(nestedVMQuark, parentTrace, startTime, endTime, Type.NestedVM, nested,ssq.getAttributeName(nestedVMQuark) ); //$NON-NLS-1$
-                            VMEntry.addChild(nestedVMEntry);
-                            entryMap.put(nestedVMQuark, nestedVMEntry);
+                    if(nestedVMEntry == null) {
+                        int nested = (int)Long.parseLong(ssq.getAttributeName(nestedVMQuark));
+                        nestedVMEntry = new ResourcesEntry(nestedVMQuark, parentTrace, startTime, endTime, Type.NestedVM, nested,ssq.getAttributeName(nestedVMQuark) ); //$NON-NLS-1$
+                        VMEntry.addChild(nestedVMEntry);
+                        entryMap.put(nestedVMQuark, nestedVMEntry);
+                    } else {
+                        nestedVMEntry.updateEndTime(endTime);
+                    }
+                    for (Integer cpuQuark : cpuQuarks) {
+                        int cpu = Integer.parseInt(ssq.getAttributeName(cpuQuark));
+                        ResourcesEntry entry = entryMap.get(cpuQuark);
+                        if (entry == null) {
+                            entry = new ResourcesEntry(cpuQuark, parentTrace, startTime, endTime, Type.CPU, cpu);
+                            entryMap.put(cpuQuark, entry);
+                            nestedVMEntry.addChild(entry);
                         } else {
-                            nestedVMEntry.updateEndTime(endTime);
-                        }
-                        for (Integer cpuQuark : cpuQuarks) {
-                            int cpu = Integer.parseInt(ssq.getAttributeName(cpuQuark));
-                            ResourcesEntry entry = entryMap.get(cpuQuark);
-                            if (entry == null) {
-                                entry = new ResourcesEntry(cpuQuark, parentTrace, startTime, endTime, Type.CPU, cpu);
-                                entryMap.put(cpuQuark, entry);
-                                nestedVMEntry.addChild(entry);
-                            } else {
-                                entry.updateEndTime(endTime);
-                            }
+                            entry.updateEndTime(endTime);
                         }
                     }
                 }
+                //}
                 nestedVMEntry=null;
             }
 

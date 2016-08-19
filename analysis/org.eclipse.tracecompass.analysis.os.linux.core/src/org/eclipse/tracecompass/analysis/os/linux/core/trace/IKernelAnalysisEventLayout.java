@@ -86,6 +86,10 @@ public interface IKernelAnalysisEventLayout {
      * @since 2.0
      */
     String eventKVMNestedVMExit();
+    /**
+     * @since 2.0
+     */
+    String eventKVMAPICAccept_IRQ();
     // ------------------------------------------------------------------------
     // Event field names
     // ------------------------------------------------------------------------
