@@ -233,6 +233,9 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
 
                 List<Integer> vCPUVMQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"vCPU","*"); //$NON-NLS-1$ //$NON-NLS-2$
                 for (Integer cpuQuark : vCPUVMQuarks) {
+                    if (ssq.getAttributeName(cpuQuark).contains("nullValue")){ //$NON-NLS-1$
+                        continue;
+                    }
                     int cpu = Integer.parseInt(ssq.getAttributeName(cpuQuark));
                     ResourcesEntry entry = entryMap.get(cpuQuark);
                     if (entry == null) {
