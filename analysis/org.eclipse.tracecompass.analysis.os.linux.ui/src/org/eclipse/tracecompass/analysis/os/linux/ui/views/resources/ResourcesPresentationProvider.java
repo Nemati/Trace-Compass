@@ -517,6 +517,8 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                 retMap.put("VCPU", value.unboxStr()); //$NON-NLS-1$
                                 int quarkThreadPTID = 0;
                                 try{
+                                    boolean invest = false;
+                                    if (invest==true ){
                                     quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                                     interval = ss.querySingleState(hoverTime, quarkThreadPTID);
                                     if (!interval.getStateValue().isNull()) {
@@ -527,18 +529,19 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                     }
 
                                     //quarkThreadPTID = ss.getQuarkAbsolute("vmName",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread");
-                                    quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"threadName"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                                    interval = ss.querySingleState(hoverTime, quarkThreadPTID);
-                                    if (!interval.getStateValue().isNull()) {
-                                        value = interval.getStateValue();
+                                    //quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"threadName"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                                    //interval = ss.querySingleState(hoverTime, quarkThreadPTID);
+                                    //if (!interval.getStateValue().isNull()) {
+                                      //  value = interval.getStateValue();
+                                    //}
+                                    //retMap.put("T-Name-IN",value.toString()); //$NON-NLS-1$
                                     }
-                                    retMap.put("T-Name-IN",value.toString()); //$NON-NLS-1$
                                 } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
                                     Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
                                 } catch (StateSystemDisposedException e) {
                                     /* Ignored */
                                 }
-                                quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"STATUS"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                                quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"Status"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                                 interval = ss.querySingleState(hoverTime, quarkThreadPTID);
                                 if (!interval.getStateValue().isNull()) {
                                     value = interval.getStateValue();
@@ -700,7 +703,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         }
 
         int status = tcEvent.getValue();
-        if (status != StateValues.CPU_STATUS_RUN_USERMODE && status != StateValues.CPU_STATUS_RUN_SYSCALL) {
+        if (status != StateValues.CPU_STATUS_RUN_USERMODE && status != StateValues.CPU_STATUS_RUN_SYSCALL && status !=StateValues.CPU_STATUS_VMX_NESTED_ROOT &&  status != StateValues.CPU_STATUS_VMX_ROOT) {
             return;
         }
 
@@ -731,7 +734,23 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                             int beginIndex = 0;
                             if (status == StateValues.CPU_STATUS_RUN_USERMODE && currentThreadId != fLastThreadId) {
                                 attribute = Attributes.EXEC_NAME;
-                            } else if (status == StateValues.CPU_STATUS_RUN_SYSCALL) {
+
+                            } else if (status == StateValues.CPU_STATUS_VMX_NESTED_ROOT || status == StateValues.CPU_STATUS_VMX_ROOT){
+                                attribute = "exit_reason";
+                                int quark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), attribute);
+                                ITmfStateInterval interval = ss.querySingleState(time, quark);
+                                if (!interval.getStateValue().isNull()) {
+                                    value = interval.getStateValue();
+                                    Integer exit_reason = value.unboxInt();
+                                    gc.setForeground(fColorWhite);
+                                    int drawn = Utils.drawText(gc, exit_reason.toString(), x + 1, bounds.y - 2, width, true, true);
+                                    if (drawn > 0) {
+                                        fLastThreadId = currentThreadId;
+                                    }
+                                }
+                                break;
+                            }
+                            else if (status == StateValues.CPU_STATUS_RUN_SYSCALL) {
                                 attribute = Attributes.SYSTEM_CALL;
                                 /*
                                  * Remove the "sys_" or "syscall_entry_" or similar from what we
