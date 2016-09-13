@@ -14,6 +14,7 @@
 package org.eclipse.tracecompass.analysis.os.linux.ui.views.resources;
 
 import org.eclipse.jdt.annotation.NonNull;
+//import org.eclipse.tracecompass.analysis.os.linux.ui.views.resources.ResourcesEntry.Type;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
@@ -61,7 +62,11 @@ public class ResourcesEntry extends TimeGraphEntry implements Comparable<ITimeGr
          * @since 1.1
          */
         NestedVM,
-        VM
+        VM,
+        /**
+         *
+         */
+        Process
 
     }
 
@@ -159,6 +164,15 @@ public class ResourcesEntry extends TimeGraphEntry implements Comparable<ITimeGr
 
     }
 
+
+
+    /**
+     * @since 1.1
+     */
+    public ResourcesEntry(Integer processQuark, ITmfTrace parentTrace, long startTime, long endTime, Type process, String processName) {
+        // TODO Auto-generated constructor stub
+        this(processQuark, parentTrace, processName , startTime, endTime, process, 1000); //$NON-NLS-1$
+    }
 
     /**
      * Get the entry's id

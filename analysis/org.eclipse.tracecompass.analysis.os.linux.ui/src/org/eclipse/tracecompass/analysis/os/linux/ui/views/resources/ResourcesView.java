@@ -246,6 +246,31 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                         entry.updateEndTime(endTime);
                     }
                 }
+
+                nestedVMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.Process, vm,"vProcess" ); //$NON-NLS-1$
+                VMEntry.addChild(nestedVMEntry);
+                entryMap.put(VMQuark, nestedVMEntry);
+                List<Integer> processVMQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"vProcesses","*"); //$NON-NLS-1$ //$NON-NLS-2$
+                for (Integer processQuark : processVMQuarks) {
+                    if (ssq.getAttributeName(processQuark).contains("nullValue")){ //$NON-NLS-1$
+                        continue;
+                    }
+                    //System.out.println(ssq.getAttributeName(processQuark));
+
+
+                    String processName = ssq.getAttributeName(processQuark);
+                    ResourcesEntry entry = entryMap.get(processQuark);
+                    if (entry == null) {
+                        entry = new ResourcesEntry(processQuark, parentTrace, startTime, endTime, Type.Process, processName);
+                        entryMap.put(processQuark, entry);
+                        nestedVMEntry.addChild(entry);
+                    } else {
+                        entry.updateEndTime(endTime);
+                    }
+                }
+
+
+
                 //if (ssq.getAttributeName(VMQuark).equals("3547")){
                 List<Integer> nestedVMQuarks = ssq.getQuarks("CPUQemu",ssq.getAttributeName(VMQuark),"nestedVM","*"); //$NON-NLS-1$ //$NON-NLS-2$
                 // List<Integer> nestedVMQuarks = ssq.getQuarks("vmName","testU1","*"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -458,6 +483,40 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                  */
                 return null;
             }
+            eventList = new ArrayList<>(fullStates.size());
+            ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
+            long lastStartTime = lastInterval == null ? -1 : lastInterval.getStartTime();
+            long lastEndTime = lastInterval == null ? -1 : lastInterval.getEndTime() + 1;
+            for (List<ITmfStateInterval> fullState : fullStates) {
+                if (monitor.isCanceled()) {
+                    return null;
+                }
+                if (statusQuark >= fullState.size()) {
+                    /* No information on this cpu (yet?), skip it for now */
+                    continue;
+                }
+                ITmfStateInterval statusInterval = fullState.get(statusQuark);
+                int status = statusInterval.getStateValue().unboxInt();
+                long time = statusInterval.getStartTime();
+                long duration = statusInterval.getEndTime() - time + 1;
+
+                if (time == lastStartTime) {
+                    continue;
+                }
+                if (!statusInterval.getStateValue().isNull()) {
+                    if (lastEndTime != time && lastEndTime != -1) {
+                        eventList.add(new TimeEvent(entry, lastEndTime, time - lastEndTime));
+                    }
+                    eventList.add(new TimeEvent(entry, time, duration, status));
+                } else {
+                    eventList.add(new NullTimeEvent(entry, time, duration));
+                }
+                lastStartTime = time;
+                lastEndTime = time + duration;
+            }
+        } if (resourcesEntry.getType().equals(Type.Process)) {
+            int statusQuark;
+            statusQuark = quark;
             eventList = new ArrayList<>(fullStates.size());
             ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
             long lastStartTime = lastInterval == null ? -1 : lastInterval.getStartTime();

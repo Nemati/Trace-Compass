@@ -90,6 +90,10 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
         VMX_NESTED_L1_PREEMPTED (new RGB(55,126,184)),
         VMX_NESTED_L0_PREEMPTED (new RGB(152,78,163)),
         VMX_NESTED_NON_ROOT (new RGB(228,26,28)),
+        PROCESS_BUSY_ONE (new RGB(50,136,189)),
+        PROCESS_BUSY_TWO (new RGB(153,213,148)),
+        PROCESS_BUSY_THREE (new RGB(230,245,152)),
+        PROCESS_BUSY_MANY (new RGB(252,141,89)),
         vCPU_WAIT_PCPU (new RGB(99,99,99));
 
         public final RGB rgb;
@@ -193,10 +197,19 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 }  else if (value == StateValues.CPU_QEMU_RUN_MANY) {
                     return State.CPU_Qemu_Busy_MANY;
                 }
+            }
+            else if (entry.getType() == Type.Process){
+                if (value==1){
+                    return State.PROCESS_BUSY_ONE;
+                } else if (value==2){
+                    return State.PROCESS_BUSY_TWO;
+                } else if (value==3){
+                    return State.PROCESS_BUSY_THREE;
+                } else if (value>3){
+                    return State.PROCESS_BUSY_MANY;
+                }
 
-
-
-
+                return State.IDLE;
             }
             else if (entry.getType() == Type.NetQemu) {
                 if (value == StateValues.NET_QEMU_IDLE) {
