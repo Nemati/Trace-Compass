@@ -220,8 +220,8 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         builder.put(layout.eventInfoIO(), INFO_IO);
         builder.put(layout.eventNetIf(), NET_IF);
         builder.put(layout.eventNetDev(), NET_DEV);
-        builder.put(layout.eventKVMEntry(), KVM_ENTRY);
-        builder.put(layout.eventKVMExit(), KVM_EXIT);
+        //builder.put(layout.eventKVMEntry(), KVM_ENTRY);
+        //builder.put(layout.eventKVMExit(), KVM_EXIT);
         builder.put(layout.eventVCPUEnterGuest(), VCPU_ENTER_GUEST);
         builder.put(layout.eventKVMNestedVMExit(), KVM_NESTED_VMEXIT);
         builder.put(layout.eventKVMAPICAccept_IRQ(), KVM_APIC_ACCEPT_IRQ);
@@ -236,6 +236,12 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         }
         for (String eventSchedWakeup : layout.eventsSchedWakeup()) {
             builder.put(eventSchedWakeup, SCHED_WAKEUP_INDEX);
+        }
+        for (String eventKVMEntry : layout.eventKVMEntry()) {
+            builder.put(eventKVMEntry, KVM_ENTRY);
+        }
+        for (String eventKVMExit : layout.eventKVMExit()) {
+            builder.put(eventKVMExit, KVM_EXIT);
         }
 
         return checkNotNull(builder.build());
@@ -1670,7 +1676,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 quark = ss.getQuarkRelativeAndAdd(currentCPUNode, Attributes.CURRENT_THREAD);
                 value = TmfStateValue.newValueInt(nextTid);
                 ss.modifyAttribute(ts, value, quark);
-                if (prevProcessName.equals("qemu-system-x86")||prevProcessName.equals("qemu-kvm")){ //$NON-NLS-1$
+                if (prevProcessName.equals("qemu-system-x86")||prevProcessName.equals("qemu-kvm")||prevProcessName.equals("qemu:ubuntu")){ //$NON-NLS-1$
                     int threadPTID = 0;
                     if (!tidToPtid.containsKey(prevTid) ) {
                         threadPTID = getVMPTID(prevTid);
@@ -1910,7 +1916,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
 
                 }
-                if (nextProcessName.equals("qemu-system-x86")||nextProcessName.equals("qemu-kvm")){ //$NON-NLS-1$
+                if (nextProcessName.equals("qemu-system-x86")||nextProcessName.equals("qemu-kvm")||nextProcessName.equals("qemu:ubuntu")){ //$NON-NLS-1$
                     Integer currentDelayThread = ss.getQuarkRelativeAndAdd(getNodeDelayQemu(ss), "preempting"); //$NON-NLS-1$
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, "exit_reason"); //$NON-NLS-1$
                     value = ss.queryOngoingState(quark);
@@ -2527,7 +2533,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
 
                      }
                 }
-                if (processName.equals("qemu-system-x86")||processName.equals("qemu-kvm")){ //$NON-NLS-1$
+                if (processName.equals("qemu-system-x86")||processName.equals("qemu-kvm")||processName.equals("qemu:ubuntu")){ //$NON-NLS-1$
 
                     /*Integer newCurrentThreadNode = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), String.valueOf(tid));
                     quark = ss.getQuarkRelativeAndAdd(newCurrentThreadNode, Attributes.PPID);

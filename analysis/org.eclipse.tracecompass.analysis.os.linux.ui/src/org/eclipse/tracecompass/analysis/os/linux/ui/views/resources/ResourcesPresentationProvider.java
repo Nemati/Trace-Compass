@@ -31,6 +31,7 @@ import org.eclipse.tracecompass.analysis.os.linux.ui.views.resources.ResourcesEn
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Activator;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
+import org.eclipse.tracecompass.statesystem.core.StateSystemUtils;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateValueTypeException;
@@ -271,6 +272,77 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 if (ss == null) {
                     return retMap;
                 }
+                try{
+
+                    int inform = 1;
+                    int nestedVMbool = 0;
+                    if (inform == 1){
+                        System.out.println("Printing...");
+                        Integer cpuqemuQuark = ss.getQuarkAbsolute("CPUQemu");
+                        List<Integer> VMsRoots = ss.getSubAttributes(cpuqemuQuark, false);
+                        for (Integer VMRoot:VMsRoots){
+                            int vCPUQuark = ss.getQuarkRelative(VMRoot,"vCPU");
+
+                            List<Integer> VMvCPUs = ss.getSubAttributes(vCPUQuark, false);
+                            ITmfStateValue value ;
+
+                            Long sumVMXRoot = 0L;
+                            Long sumVMXNonRoot = 0L;
+                            for (Integer VMvCPU:VMvCPUs){
+                                Integer VMvCPUStatus = ss.getQuarkRelative(VMvCPU,"Status");
+                                List<ITmfStateInterval> intervalList = StateSystemUtils.queryHistoryRange(ss,VMvCPUStatus,ss.getStartTime(),hoverTime);
+
+                                for (ITmfStateInterval intervals:intervalList){
+                                    if (!intervals.getStateValue().isNull()) {
+                                        value = intervals.getStateValue();
+                                        if (value.unboxInt()==StateValues.CPU_STATUS_VMX_ROOT){
+                                            sumVMXRoot+= intervals.getEndTime()-intervals.getStartTime();
+                                        } else if (value.unboxInt()==StateValues.CPU_STATUS_VMX_NON_ROOT){
+                                            sumVMXNonRoot+= intervals.getEndTime()-intervals.getStartTime();
+                                        }
+                                    }
+                                }
+                            }
+                            System.out.println("Time:"+ hoverTime + "   VMXRoot:"+ sumVMXRoot + "   VMXNonRoot:"+ sumVMXNonRoot );
+                            if (nestedVMbool == 1){
+                                int nestedVMQuark = ss.getQuarkRelative(VMRoot,"nestedVM");
+                                List<Integer> nestedVMsRoot = ss.getSubAttributes(nestedVMQuark, false);
+
+                                for (Integer nestedVMRoot:nestedVMsRoot){
+                                    sumVMXRoot = 0L;
+                                    sumVMXNonRoot = 0L;
+                                    Long sumVMXNestedRoot = 0L;
+                                    Long sumVMXNestedNonRoot = 0L;
+                                    VMvCPUs = ss.getSubAttributes(nestedVMRoot, false);
+                                    for (Integer VMvCPU:VMvCPUs){
+                                        int VMvCPUStatus = ss.getQuarkRelative(VMvCPU,"Status");
+                                        List<ITmfStateInterval> intervalList = StateSystemUtils.queryHistoryRange(ss,VMvCPUStatus,ss.getStartTime(),hoverTime);
+                                        for (ITmfStateInterval intervals:intervalList){
+                                            if (!intervals.getStateValue().isNull()) {
+                                                value = intervals.getStateValue();
+                                                if (value.unboxInt()==StateValues.CPU_STATUS_VMX_ROOT){
+                                                    sumVMXRoot+= intervals.getEndTime()-intervals.getStartTime();
+                                                } else if (value.unboxInt()==StateValues.CPU_STATUS_VMX_NON_ROOT){
+                                                    sumVMXNonRoot+= intervals.getEndTime()-intervals.getStartTime();
+                                                } else if (value.unboxInt()==StateValues.CPU_STATUS_VMX_NESTED_NON_ROOT){
+                                                    sumVMXNestedNonRoot+= intervals.getEndTime()-intervals.getStartTime();
+                                                } else if (value.unboxInt()==StateValues.CPU_STATUS_VMX_NESTED_ROOT){
+                                                    sumVMXNestedRoot+= intervals.getEndTime()-intervals.getStartTime();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    System.out.println("Time:"+ hoverTime + "   VMXRoot:"+ sumVMXRoot + "   VMXNonRoot:"+ sumVMXNonRoot + "   VMXNestedRoot:"+ sumVMXNestedRoot + "   VMXNestedNonRoot:"+ sumVMXNestedNonRoot );
+                                }
+                            }
+                        }
+                    }
+                } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
+                    Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
+                } catch (StateSystemDisposedException e) {
+
+                }
+
                 // Check for IO
                 if (entry.getType().equals(Type.IOQemuRead)) {
 
@@ -357,7 +429,6 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                         /* Ignored */
                     }
                 }
-
 
                 // Check for Net Qemu
                 if (entry.getType().equals(Type.NetQemu)) {
@@ -532,22 +603,22 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                 try{
                                     boolean invest = false;
                                     if (invest==true ){
-                                    quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                                    interval = ss.querySingleState(hoverTime, quarkThreadPTID);
-                                    if (!interval.getStateValue().isNull()) {
-                                        value = interval.getStateValue();
-                                    }
-                                    if (value.unboxInt()!=0){
-                                        retMap.put("T-ID-IN",value.toString()); //$NON-NLS-1$
-                                    }
+                                        quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                                        interval = ss.querySingleState(hoverTime, quarkThreadPTID);
+                                        if (!interval.getStateValue().isNull()) {
+                                            value = interval.getStateValue();
+                                        }
+                                        if (value.unboxInt()!=0){
+                                            retMap.put("T-ID-IN",value.toString()); //$NON-NLS-1$
+                                        }
 
-                                    //quarkThreadPTID = ss.getQuarkAbsolute("vmName",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread");
-                                    //quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"threadName"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                                    //interval = ss.querySingleState(hoverTime, quarkThreadPTID);
-                                    //if (!interval.getStateValue().isNull()) {
-                                      //  value = interval.getStateValue();
-                                    //}
-                                    //retMap.put("T-Name-IN",value.toString()); //$NON-NLS-1$
+                                        //quarkThreadPTID = ss.getQuarkAbsolute("vmName",threadPTID.toString(),"vCPU",vcpu_id.toString(),"thread");
+                                        //quarkThreadPTID = ss.getQuarkAbsolute("CPUQemu",threadPTID.toString(),"vCPU",vcpu_id.toString(),"threadName"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                                        //interval = ss.querySingleState(hoverTime, quarkThreadPTID);
+                                        //if (!interval.getStateValue().isNull()) {
+                                        //  value = interval.getStateValue();
+                                        //}
+                                        //retMap.put("T-Name-IN",value.toString()); //$NON-NLS-1$
                                     }
                                 } catch (AttributeNotFoundException | TimeRangeException | StateValueTypeException e) {
                                     Activator.getDefault().logError("Error in ResourcesPresentationProvider", e); //$NON-NLS-1$
@@ -567,6 +638,17 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                 if (status == StateValues.CPU_STATUS_VMX_ROOT || status == StateValues.CPU_STATUS_VMX_NESTED_ROOT){
                                     int exitQuark = ss.getQuarkAbsolute(Attributes.THREADS, Integer.toString(currentThreadId), "exit_reason"); //$NON-NLS-1$
                                     interval = ss.querySingleState(hoverTime, exitQuark);
+                                    List<ITmfStateInterval> intervalList = StateSystemUtils.queryHistoryRange(ss,exitQuark,ss.getStartTime(),hoverTime);
+                                    Long sum = 0L;
+                                    for (ITmfStateInterval intervals:intervalList){
+                                        if (!interval.getStateValue().isNull()) {
+                                            value = intervals.getStateValue();
+                                            if (value.unboxInt()==1){
+                                                sum+= intervals.getEndTime()-intervals.getStartTime();
+                                            }
+                                        }
+                                    }
+
                                     if (!interval.getStateValue().isNull()) {
                                         value = interval.getStateValue();
                                         int exit_reason = value.unboxInt();
@@ -609,7 +691,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                                         }
                                         case 21:{
                                             retMap.put("Exit Reason","VMPTRLD");  //$NON-NLS-1$ //$NON-NLS-2$
-                                         break;
+                                            break;
                                         }
                                         case 20: {
                                             retMap.put("Exit Reason","VM LUNCH");  //$NON-NLS-1$ //$NON-NLS-2$

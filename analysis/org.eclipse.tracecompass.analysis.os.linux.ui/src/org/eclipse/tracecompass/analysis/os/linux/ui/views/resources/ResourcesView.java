@@ -210,9 +210,10 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
 
                 VMEntry = entryMap.get(VMQuark);
                 int vm = (int)Long.parseLong(ssq.getAttributeName(VMQuark));
-
-                String vmName = namePIDmap.get(ssq.getAttributeName(VMQuark));
-
+                String vmName = "U1";
+                if (namePIDmap.containsKey(ssq.getAttributeName(VMQuark))){
+                    vmName = namePIDmap.get(ssq.getAttributeName(VMQuark));
+                }
                 if(VMEntry == null) {
                     //VMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,ssq.getAttributeName(VMQuark)); //$NON-NLS-1$
                     VMEntry = new ResourcesEntry(VMQuark, parentTrace, startTime, endTime, Type.VM, vm,vmName); //$NON-NLS-1$

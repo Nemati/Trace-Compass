@@ -57,14 +57,24 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
     public String eventKVMNestedVMExit() {
         return "kvm_nested_vmexit"; //$NON-NLS-1$
     }
+
+    private static final Collection<String> KVM_ENTRY =
+            checkNotNull(ImmutableList.of("kvm_entry", "kvm_x86_entry")); //$NON-NLS-1$ //$NON-NLS-2$
+
     @Override
-    public String eventKVMEntry() {
-        return "kvm_entry"; //$NON-NLS-1$
+    public Collection<String> eventKVMEntry() {
+        return KVM_ENTRY;
     }
+
+    private static final Collection<String> KVM_EXIT =
+            checkNotNull(ImmutableList.of("kvm_entry", "kvm_x86_entry")); //$NON-NLS-1$ //$NON-NLS-2$
+
     @Override
-    public String eventKVMExit() {
-        return "kvm_exit"; //$NON-NLS-1$
+    public Collection<String> eventKVMExit() {
+        return KVM_EXIT;
     }
+
+
     @Override
     public String eventVCPUEnterGuest() {
         return "addons_vcpu_enter_guest"; //$NON-NLS-1$

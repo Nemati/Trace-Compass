@@ -44,8 +44,8 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     private static final String SCHED_PI_SETPRIO = "sched_pi_setprio";
     private static final String SUBMIT_IO = "qemu:thread_pool_submit"; //$NON-NLS-1$
     private static final String COMPLETE_IO =  "qemu:thread_pool_complete"; //$NON-NLS-1$
-    private static final String KVM_ENTRY =  "kvm_entry"; //$NON-NLS-1$
-    private static final String KVM_EXIT =  "kvm_exit"; //$NON-NLS-1$
+    private static final Collection<String> KVM_ENTRY =  checkNotNull(ImmutableList.of("kvm_entry", "kvm_x86_entry"));
+    private static final Collection<String> KVM_EXIT =  checkNotNull(ImmutableList.of("kvm_exit", "kvm_x86_exit"));
     private static final String INFO_IO = "qemu:bdrv_co_io_em"; //$NON-NLS-1$
     private static final String NET_IF = "netif_rx"; //$NON-NLS-1$
     private static final String NET_DEV = "net_dev_xmit"; //$NON-NLS-1$
@@ -189,11 +189,11 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     }
 
     @Override
-    public String eventKVMEntry() {
+    public Collection<String> eventKVMEntry() {
         return KVM_ENTRY;
     }
     @Override
-    public String eventKVMExit() {
+    public Collection<String> eventKVMExit() {
         return KVM_EXIT;
     }
     @Override

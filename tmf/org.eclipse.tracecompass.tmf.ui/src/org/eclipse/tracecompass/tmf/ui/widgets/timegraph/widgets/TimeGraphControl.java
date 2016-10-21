@@ -2108,13 +2108,13 @@ public class TimeGraphControl extends TimeGraphBaseControl
             }
             long selectionBegin = tdp.getSelectionBegin();
             long selectionEnd = tdp.getSelectionEnd();
-            message.append(NLS.bind("T1: {0}{1}", //$NON-NLS-1$
+            message.append(NLS.bind("T1h: {0}{1}", //$NON-NLS-1$
                     new Object[] {
                             tf == TimeFormat.CALENDAR ? Utils.formatDate(selectionBegin) + ' ' : "", //$NON-NLS-1$
                             Utils.formatTime(selectionBegin, tf, res)
                     }));
             if (selectionBegin != selectionEnd) {
-                message.append(NLS.bind("     T2: {0}{1}     \u0394: {2}", //$NON-NLS-1$
+                message.append(NLS.bind("     T2h: {0}{1}     \u0394: {2}", //$NON-NLS-1$
                         new Object[] {
                                 tf == TimeFormat.CALENDAR ? Utils.formatDate(selectionEnd) + ' ' : "", //$NON-NLS-1$
                                 Utils.formatTime(selectionEnd, tf, res),

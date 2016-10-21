@@ -46,8 +46,10 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String SUBMIT_IO = "qemu:thread_pool_submit"; //$NON-NLS-1$
     //private static final String MODIFY_IO = "qemu:bdrv_co_io_em"; //$NON-NLS-1$
     private static final String COMPLETE_IO =  "qemu:thread_pool_complete"; //$NON-NLS-1$
-    private static final String KVM_ENTRY =  "kvm_entry"; //$NON-NLS-1$
-    private static final String KVM_EXIT =  "kvm_exit"; //$NON-NLS-1$
+    private static final Collection<String> KVM_ENTRY = checkNotNull(ImmutableList.of("kvm_entry", "kvm_x86_entry")); //$NON-NLS-1$ //$NON-NLS-2$
+    //private static final String KVM_ENTRY =  "kvm_entry"; //$NON-NLS-1$
+    //private static final String KVM_EXIT =  "kvm_exit"; //$NON-NLS-1$
+    private static final Collection<String> KVM_EXIT = checkNotNull(ImmutableList.of("kvm_exit", "kvm_x86_exit")); //$NON-NLS-1$ //$NON-NLS-2$
     private static final String VCPU_ENTER_GUEST =  "addons_vcpu_enter_guest"; //$NON-NLS-1$
     private static final String KVM_NESTED_VMEXIT = "kvm_nested_vmexit"; //$NON-NLS-1$
     private static final String KVM_APIC_ACCEPT_IRQ = "kvm_apic_accept_irq"; //$NON-NLS-1$
@@ -187,12 +189,12 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     }
 
     @Override
-    public String eventKVMEntry() {
+    public Collection<String> eventKVMEntry() {
         return KVM_ENTRY;
     }
 
     @Override
-    public String eventKVMExit() {
+    public Collection<String> eventKVMExit() {
         return KVM_EXIT;
     }
     @Override

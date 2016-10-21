@@ -79,8 +79,8 @@ public interface IKernelAnalysisEventLayout {
     /**
      * @since 2.0
      */
-    String eventKVMEntry();
-    String eventKVMExit();
+    Collection<String> eventKVMEntry();
+    Collection<String> eventKVMExit();
     String eventVCPUEnterGuest();
     /**
      * @since 2.0
