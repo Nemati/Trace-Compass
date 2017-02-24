@@ -46,6 +46,8 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     private static final String SUBMIT_IO = "qemu:thread_pool_submit"; //$NON-NLS-1$
     //private static final String MODIFY_IO = "qemu:bdrv_co_io_em"; //$NON-NLS-1$
     private static final String COMPLETE_IO =  "qemu:thread_pool_complete"; //$NON-NLS-1$
+    private static final String UST_MYSQL_COMMAND_DONE = "ust_mysql:command_done" ; //$NON-NLS-1$
+    private static final String UST_MYSQL_COMMAND_START = "ust_mysql:command_start" ; //$NON-NLS-1$
     private static final Collection<String> KVM_ENTRY = checkNotNull(ImmutableList.of("kvm_entry", "kvm_x86_entry")); //$NON-NLS-1$ //$NON-NLS-2$
     //private static final String KVM_ENTRY =  "kvm_entry"; //$NON-NLS-1$
     //private static final String KVM_EXIT =  "kvm_exit"; //$NON-NLS-1$
@@ -153,6 +155,20 @@ public class DefaultEventLayout implements IKernelAnalysisEventLayout{
     @Override
     public String eventSchedProcessFree() {
         return SCHED_PROCESS_FREE;
+    }
+    /**
+     * @since 2.0
+     */
+    @Override
+    public String eventUSTMysqlCommandStart(){
+        return UST_MYSQL_COMMAND_START;
+    }
+    /**
+     * @since 2.0
+     */
+    @Override
+    public String eventUSTMysqlCommandDone(){
+        return UST_MYSQL_COMMAND_DONE;
     }
 
     @Override

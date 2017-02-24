@@ -80,6 +80,15 @@ public class PerfEventLayout implements IKernelAnalysisEventLayout {
         return "addons_vcpu_enter_guest"; //$NON-NLS-1$
     }
     @Override
+    public String eventUSTMysqlCommandDone() {
+        return "ust_mysql:command_done"; //$NON-NLS-1$
+    }
+    @Override
+    public String eventUSTMysqlCommandStart() {
+        return "ust_mysql:command_start"; //$NON-NLS-1$
+    }
+
+    @Override
     public String eventKVMAPICAccept_IRQ(){
         return "kvm_apic_accept_irq"; //$NON-NLS-1$
     }

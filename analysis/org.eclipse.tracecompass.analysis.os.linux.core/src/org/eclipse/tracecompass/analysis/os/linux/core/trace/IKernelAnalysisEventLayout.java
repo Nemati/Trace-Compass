@@ -79,6 +79,14 @@ public interface IKernelAnalysisEventLayout {
     /**
      * @since 2.0
      */
+    String eventUSTMysqlCommandStart();
+    /**
+     * @since 2.0
+     */
+    String eventUSTMysqlCommandDone();
+    /**
+     * @since 2.0
+     */
     Collection<String> eventKVMEntry();
     Collection<String> eventKVMExit();
     String eventVCPUEnterGuest();

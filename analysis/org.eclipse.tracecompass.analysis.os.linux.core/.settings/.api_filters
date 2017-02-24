@@ -344,6 +344,11 @@
         </filter>
         <filter id="1143996420">
             <message_arguments>
+                <message_argument value="eventUSTMysqlCommandStart()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1143996420">
+            <message_arguments>
                 <message_argument value="eventVCPUEnterGuest()"/>
             </message_arguments>
         </filter>
@@ -411,6 +416,11 @@
         <filter id="1211105284">
             <message_arguments>
                 <message_argument value="eventSubmitIO()"/>
+            </message_arguments>
+        </filter>
+        <filter id="1211105284">
+            <message_arguments>
+                <message_argument value="eventUSTMysqlCommandDone()"/>
             </message_arguments>
         </filter>
         <filter id="1211105284">

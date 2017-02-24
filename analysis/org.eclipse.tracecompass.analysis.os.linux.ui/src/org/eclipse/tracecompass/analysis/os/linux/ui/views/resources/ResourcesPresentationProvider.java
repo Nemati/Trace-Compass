@@ -274,7 +274,7 @@ public class ResourcesPresentationProvider extends TimeGraphPresentationProvider
                 }
                 try{
 
-                    int inform = 1;
+                    int inform = 0;
                     int nestedVMbool = 0;
                     if (inform == 1){
                         System.out.println("Printing...");

@@ -52,6 +52,9 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     private static final String VCPU_ENTER_GUEST =  "addons_vcpu_enter_guest"; //$NON-NLS-1$
     private static final String KVM_NESTED_VMEXIT = "kvm_nested_vmexit"; //$NON-NLS-1$
     private static final String KVM_APIC_ACCEPT_IRQ = "kvm_apic_accept_irq";
+    private static final String UST_MYSQL_COMMAND_DONE = "ust_mysql:command_done";
+    private static final String UST_MYSQL_COMMAND_START = "ust_mysql:command_start";
+
     private static final Collection<String> SCHED_WAKEUP_EVENTS =
             checkNotNull(ImmutableList.of("sched_wakeup", "sched_wakeup_new"));
 
@@ -187,7 +190,21 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     public String eventSubmitIO() {
         return SUBMIT_IO;
     }
+    /**
+     * s
+     */
+    @Override
+    public String eventUSTMysqlCommandStart() {
+        return UST_MYSQL_COMMAND_START;
+    }
 
+    /**
+     * s
+     */
+    @Override
+    public String eventUSTMysqlCommandDone() {
+        return UST_MYSQL_COMMAND_DONE;
+    }
     @Override
     public Collection<String> eventKVMEntry() {
         return KVM_ENTRY;

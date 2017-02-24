@@ -14,6 +14,8 @@ package org.eclipse.tracecompass.internal.analysis.os.linux.core.kernelanalysis;
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 import java.util.List;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -128,6 +130,8 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     private static final int VCPU_ENTER_GUEST = 21;
     private static final int KVM_NESTED_VMEXIT = 22;
     private static final int KVM_APIC_ACCEPT_IRQ = 23;
+    private static final int UST_MYSQL_COMMAND_START = 24;
+    private static final int UST_MYSQL_COMMAND_DONE = 25;
     private static Map<Integer,Integer> netIf = new HashMap<>() ;
     private static Map<Integer,Integer> netDev = new HashMap<>() ;
     private static Map<Integer,Long> netTs = new HashMap<>() ;
@@ -166,6 +170,13 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
     public static Map<Integer,Integer> isNestedVM = new HashMap<>();
     public static Map<Integer,Long> prevCR3 = new HashMap<>();
     public static Map<Long,Integer> nestedVMCR3 = new HashMap<>();
+    public static Map<Integer,Map<String,Long>> allsqlThread = new HashMap<>();
+    public static Map<Integer,Integer> vcpu2vtid = new HashMap<>();
+    public static Map<Integer,Integer> sql_vcpu2pcpu = new HashMap<>();
+    public static Map<Integer,Integer> sql_pcpu2vcpu = new HashMap<>();
+    @Nullable public FileWriter out1;
+    public static Map<Integer,Map<Integer,Integer>> allsqlExit = new HashMap<>();
+
     // ------------------------------------------------------------------------
     // Fields
     // ------------------------------------------------------------------------
@@ -187,7 +198,9 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
      *            depending on the tracer implementation.
      */
     public KernelStateProvider(ITmfTrace trace, IKernelAnalysisEventLayout layout) {
+
         super(trace, "Kernel"); //$NON-NLS-1$
+
         fLayout = layout;
         fEventNames = buildEventNames(layout);
     }
@@ -220,6 +233,8 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
         builder.put(layout.eventInfoIO(), INFO_IO);
         builder.put(layout.eventNetIf(), NET_IF);
         builder.put(layout.eventNetDev(), NET_DEV);
+        builder.put(layout.eventUSTMysqlCommandStart(), UST_MYSQL_COMMAND_START);
+        builder.put(layout.eventUSTMysqlCommandDone(), UST_MYSQL_COMMAND_DONE);
         //builder.put(layout.eventKVMEntry(), KVM_ENTRY);
         //builder.put(layout.eventKVMExit(), KVM_EXIT);
         builder.put(layout.eventVCPUEnterGuest(), VCPU_ENTER_GUEST);
@@ -502,6 +517,91 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
             int intval = (idx == null ? -1 : idx.intValue());
 
             switch (intval) {
+
+            case UST_MYSQL_COMMAND_START:{
+                // states :    out = 0, start=1, vmx_root=3, vmx_non-root=4, wait= 5
+                ITmfEventField content = event.getContent();
+                //System.out.println(ts+"\t"+event.getName() + "\t" + event.getContent());
+                Integer sqlTID = Integer.parseInt(content.getField("thread_id").getValue().toString()); //$NON-NLS-1$
+                Integer vtid = Integer.parseInt(content.getField("context._vtid").getValue().toString());
+                Integer command = Integer.parseInt(content.getField("command").getValue().toString());
+                Map<String,Long> sqlThread = new HashMap<>();
+                Map<Integer,Integer> exitThread = new HashMap<>();
+                allsqlExit.put(vtid, exitThread);
+                sqlThread.put("non-root_start", ts);
+                sqlThread.put("on-cpu_start",ts);
+                sqlThread.put("vmx_nonroot", 0L);
+                sqlThread.put("start",ts);
+                sqlThread.put("status",4L);
+                sqlThread.put("vtid", vtid.longValue());
+                sqlThread.put("sqlTID",sqlTID.longValue());
+                sqlThread.put("wait",0L);
+                sqlThread.put("vmx_root",0L);
+                sqlThread.put("on-cpu",0L);
+                sqlThread.put("root_start",0L);
+                sqlThread.put("command", (long) command);
+                allsqlThread.put(vtid, sqlThread);
+                vcpu2vtid.put(cpu, vtid);
+
+
+            } break;
+            case UST_MYSQL_COMMAND_DONE:{
+                ITmfEventField content = event.getContent();
+                //System.out.println(ts+"\t"+event.getName() + "\t" + event.getContent());
+                //int sqlTID = Integer.parseInt(content.getField("thread_id").getValue().toString());
+                int vtid = Integer.parseInt(content.getField("context._vtid").getValue().toString());
+                Map <String,Long> sqlThread = allsqlThread.get(vtid);
+
+                if (vcpu2vtid.containsKey(cpu)){
+                    vcpu2vtid.remove(cpu);
+                }
+                int e30 = 0;
+                int e32 = 0;
+                int e01 = 0;
+
+                sqlThread.put("on-cpu",sqlThread.get("on-cpu")+ts - sqlThread.get("on-cpu_start"));  //$NON-NLS-1$//$NON-NLS-2$
+                sqlThread.put("vmx_nonroot", sqlThread.get("vmx_nonroot")+ts-sqlThread.get("non-root_start"));
+                                System.out.println("----------------------------------------------------------");
+                System.out.println("Total:"+(ts - sqlThread.get("start")));
+                Map <Integer,Integer> exitThread = allsqlExit.get(vtid);
+                System.out.println("Exit Reasons");
+                for (Integer key:exitThread.keySet()){
+                    if (key == 30){
+                       e30 = exitThread.get(key);
+                    } else if (key==32){
+                        e32 = exitThread.get(key);
+                    }  else if (key==01){
+                        e01 = exitThread.get(key);
+                    }
+                    System.out.print(key+":"+exitThread.get(key)+" ");
+                }
+                System.out.println("\nCommand:"+sqlThread.get("command")+"\twait:" + sqlThread.get("wait") + "\tvmxroot:" + sqlThread.get("vmx_root")+"\tvxm-nonRoot:"+sqlThread.get("vmx_nonroot")+"\ton-cpu:"+sqlThread.get("on-cpu"));
+
+                try {
+
+                    out1 = new FileWriter("hani.csv",true);
+
+
+                    final FileWriter out12 = out1;
+
+                    out12.append(sqlThread.get("command").toString()+","+sqlThread.get("wait").toString()+","+sqlThread.get("vmx_root").toString()+","+sqlThread.get("vmx_nonroot").toString()+","+sqlThread.get("on-cpu").toString()+","+e30+","+e32+","+e01+"\n");
+
+
+                    out12.close();
+
+                }
+                catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+
+
+                allsqlThread.remove(vtid);
+
+
+
+            }break;
             case KVM_NESTED_VMEXIT:{
 
                 ITmfEventField content = event.getContent();
@@ -730,6 +830,30 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
             }
             case KVM_ENTRY:{
                 ITmfEventField content = event.getContent();
+                String vcpu_id = content.getField("vcpu_id").getValue().toString(); //$NON-NLS-1$
+
+
+                ITmfEventField sql_vcpu_id = content.getField("vcpu_id");
+
+                sql_pcpu2vcpu.put(cpu, Integer.parseInt( sql_vcpu_id.getValue().toString())) ;
+                sql_vcpu2pcpu.put(Integer.parseInt( sql_vcpu_id.getValue().toString()), cpu) ;
+                if (vcpu2vtid.containsKey(Integer.parseInt( sql_vcpu_id.getValue().toString())) ) {
+                    Integer vtid = vcpu2vtid.get(Integer.parseInt(sql_vcpu_id.getValue().toString()));
+                    if (allsqlThread.containsKey(vtid)){
+
+                        Map <String,Long> sqlThread = allsqlThread.get(vtid);
+                        if (sqlThread.containsKey("vmx_root") && sqlThread.get("status")== 3L){
+                            //System.out.println(ts+"\t"+event.getName() + "\t" + event.getContent());
+
+                            Long sum_root = sqlThread.get("vmx_root");
+                            sqlThread.put("vmx_root", sum_root+ts-sqlThread.get("root_start"));
+                            sqlThread.put("non-root_start", ts);
+                            sqlThread.put("status",4L);
+                        }
+                        allsqlThread.put(vcpu2vtid.get(Integer.parseInt(sql_vcpu_id.getValue().toString())),sqlThread);
+
+                    }
+                }
 
 
                 int threadPTID = getVMPTID(thread);
@@ -738,7 +862,6 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 }
                 int currentThreadCPU = ss.getQuarkRelativeAndAdd(getNodeCPUQemu(ss), String.valueOf(threadPTID));
                 int vCPUQuark = ss.getQuarkRelativeAndAdd(currentThreadCPU, "vCPU"); //$NON-NLS-1$
-                String vcpu_id = content.getField("vcpu_id").getValue().toString(); //$NON-NLS-1$
 
 
                 int vCPUID = ss.getQuarkRelativeAndAdd(vCPUQuark, vcpu_id);
@@ -947,6 +1070,33 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
             case KVM_EXIT:{
                 ITmfEventField content = event.getContent();
                 final int reason = Integer.parseInt(content.getField("exit_reason").getValue().toString()); //$NON-NLS-1$
+
+                if (sql_pcpu2vcpu.containsKey(cpu)){
+                    Integer vcpu = sql_pcpu2vcpu.get(cpu);
+                    if (vcpu2vtid.containsKey(vcpu) && allsqlThread.containsKey(vcpu2vtid.get(vcpu))){
+                        Map<String,Long> sqlThread = allsqlThread.get(vcpu2vtid.get(vcpu));
+
+                        if (sqlThread.containsKey("non-root_start") && sqlThread.containsKey("vmx_nonroot") && sqlThread.get("status") == 4L){
+                            //System.out.println(ts+"\t"+event.getName() + "\t" + event.getContent());
+                            Map <Integer,Integer> exitThread = allsqlExit.get(vcpu2vtid.get(vcpu));
+                            if (exitThread.containsKey(reason)){
+                                exitThread.put(reason,exitThread.get(reason)+1);
+                            } else{
+                                exitThread.put(reason, 1);
+                            }
+                            allsqlExit.put(vcpu2vtid.get(vcpu), exitThread);
+                            sqlThread.put("root_start", ts);
+                            Long sum_nonroot = sqlThread.get("vmx_nonroot");
+                            sqlThread.put("vmx_nonroot", sum_nonroot + ts-sqlThread.get("non-root_start"));
+                            sqlThread.put("status", 3L);
+
+
+                        }
+                        allsqlThread.put(vcpu2vtid.get(vcpu), sqlThread);
+
+                    }
+                }
+
                 if (reason == 24 || reason == 20){
                     exitVMClass exitVM = new exitVMClass(ts,reason);
                     NVM nvm = new NVM(exitVM,3,-1L,-1L);
@@ -1345,7 +1495,7 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 if (threadPTID==0){
                     break;
                 }
-                                int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeIO(ss), String.valueOf(threadPTID));
+                int currentThreadIO = ss.getQuarkRelativeAndAdd(getNodeIO(ss), String.valueOf(threadPTID));
 
 
 
@@ -1613,6 +1763,38 @@ public class KernelStateProvider extends AbstractTmfStateProvider {
                 Integer nextPrio = ((Long) content.getField(fLayout.fieldNextPrio()).getValue()).intValue();
                 Integer formerThreadNode = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), prevTid.toString());
                 Integer newCurrentThreadNode = ss.getQuarkRelativeAndAdd(getNodeThreads(ss), nextTid.toString());
+
+                if (nextProcessName.equals("mysqld") && allsqlThread.containsKey(nextTid)){
+                    Map <String,Long> sqlThread = allsqlThread.get(nextTid);
+                    vcpu2vtid.put(cpu, nextTid);
+                    sql_pcpu2vcpu.put(sql_vcpu2pcpu.get(cpu),cpu);
+                    sqlThread.put("on-cpu_start", ts);
+                    if (sqlThread.get("status") == 5L ){
+                        sqlThread.put("non-root_start",ts);
+                    }
+                    //System.out.println(ts+"\t"+event.getName() + "\t" + event.getContent());
+
+                    Long sum_wait = sqlThread.get("wait");
+                    sqlThread.put("wait", sum_wait+ts-sqlThread.get("wait_start"));
+                    sqlThread.put("status", 4L);
+                    allsqlThread.put(nextTid, sqlThread);
+                }
+                if (prevProcessName.equals("mysqld") && allsqlThread.containsKey(prevTid)) {
+                    Map <String,Long> sqlThread = allsqlThread.get(prevTid);
+                    sqlThread.put("wait_start",ts) ;
+                    //System.out.println(ts+"\t"+event.getName() + "\t" + event.getContent());
+
+                    Long sum_nonroot = sqlThread.get("vmx_nonroot");
+                    sqlThread.put("vmx_nonroot", sum_nonroot + ts-sqlThread.get("non-root_start"));
+                    sqlThread.put("status", 5L);
+
+                    if (sqlThread.get("on-cpu_start")> 0){
+                        Long sum_on_cpu = sqlThread.get("on-cpu");
+                        sqlThread.put("on-cpu",sum_on_cpu+ts-sqlThread.get("on-cpu_start")) ;
+                    }
+
+                    allsqlThread.put(prevTid, sqlThread);
+                }
 
                 /*
                  * Empirical observations and look into the linux code have
