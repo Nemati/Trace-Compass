@@ -17,15 +17,22 @@ package org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.controlflow
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Vector;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -67,7 +74,10 @@ import org.eclipse.tracecompass.internal.provisional.tmf.core.model.timegraph.IT
 import org.eclipse.tracecompass.internal.provisional.tmf.core.model.timegraph.TimeGraphEntryModel;
 import org.eclipse.tracecompass.internal.provisional.tmf.core.response.ITmfResponse;
 import org.eclipse.tracecompass.internal.provisional.tmf.core.response.TmfModelResponse;
+import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.statesystem.core.StateSystemUtils;
+import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
+import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.tmf.core.dataprovider.DataProviderManager;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSelectionRangeUpdatedSignal;
@@ -75,6 +85,7 @@ import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalManager;
 import org.eclipse.tracecompass.tmf.core.signal.TmfTraceClosedSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfTraceSelectedSignal;
+import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfContext;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
@@ -147,9 +158,9 @@ public class ControlFlowView extends BaseDataProviderTimeGraphView {
     static {
         ImmutableList.Builder<Comparator<ITimeGraphEntry>> builder = ImmutableList.builder();
         builder.add(ControlFlowColumnComparators.PROCESS_NAME_COLUMN_COMPARATOR)
-            .add(ControlFlowColumnComparators.TID_COLUMN_COMPARATOR)
-            .add(ControlFlowColumnComparators.PTID_COLUMN_COMPARATOR)
-            .add(ControlFlowColumnComparators.BIRTH_TIME_COLUMN_COMPARATOR);
+        .add(ControlFlowColumnComparators.TID_COLUMN_COMPARATOR)
+        .add(ControlFlowColumnComparators.PTID_COLUMN_COMPARATOR)
+        .add(ControlFlowColumnComparators.BIRTH_TIME_COLUMN_COMPARATOR);
         List<Comparator<ITimeGraphEntry>> l = builder.build();
         COLUMN_COMPARATORS = l.toArray(new Comparator[l.size()]);
     }
@@ -216,6 +227,9 @@ public class ControlFlowView extends BaseDataProviderTimeGraphView {
         }
     }
 
+    private IAction fIntelligenceAction;
+
+
     // ------------------------------------------------------------------------
     // Constructors
     // ------------------------------------------------------------------------
@@ -264,6 +278,10 @@ public class ControlFlowView extends BaseDataProviderTimeGraphView {
         IAction optimizationAction = getOptimizationAction();
         manager.appendToGroup(IWorkbenchActionConstants.MB_ADDITIONS, optimizationAction);
 
+        // add "Optimization" Button to local tool bar of Controlflow
+        IAction intelligenceAction = getIntelligenceAction();
+        manager.appendToGroup(IWorkbenchActionConstants.MB_ADDITIONS, intelligenceAction);
+
         // add a separator to local tool bar
         manager.appendToGroup(IWorkbenchActionConstants.MB_ADDITIONS, new Separator());
 
@@ -308,6 +326,16 @@ public class ControlFlowView extends BaseDataProviderTimeGraphView {
             fOptimizationAction.setToolTipText(Messages.ControlFlowView_optimizeToolTip);
         }
         return fOptimizationAction;
+    }
+
+    private IAction getIntelligenceAction() {
+        if (fIntelligenceAction == null) {
+            fIntelligenceAction = new IntelligenceAction();
+            //            fIntelligenceAction.setImageDescriptor(Activator.getDefault().getImageDescripterFromPath(OPTIMIZE_ICON));
+            fIntelligenceAction.setText("smart filter");
+            fIntelligenceAction.setToolTipText("This is artificial intelligence stuff");
+        }
+        return fIntelligenceAction;
     }
 
     @Override
@@ -579,6 +607,170 @@ public class ControlFlowView extends BaseDataProviderTimeGraphView {
             }
 
             setEntryComparator(ControlFlowColumnComparators.SCHEDULING_COLUMN_COMPARATOR);
+            refresh();
+        }
+
+    }
+
+    /**
+     * This is an optimization action used to find cliques of entries due to
+     * links and put them closer together
+     *
+     * @author Hani Nemati
+     */
+    private final class IntelligenceAction extends Action {
+
+        @Override
+        public void runWithEvent(Event event) {
+            ITmfTrace parentTrace = getTrace();
+            if (parentTrace == null) {
+                return;
+            }
+            HashMap<Integer,Integer> predLine2result = new HashMap<>(); // Line to String
+            HashMap<Integer,Integer> predThread2result = new HashMap<>();
+
+
+            createFlatAction().run();
+
+            ITmfStateSystem ss = TmfStateSystemAnalysisModule.getStateSystem(parentTrace, KernelAnalysisModule.ID);
+            if (ss == null) {
+                return ;
+            }
+            File pattern = null;
+            pattern = new File("patternData.txt");
+            pattern.delete();
+            File syscallFeature = null;
+            syscallFeature = new File("syscallFeatures.txt");
+            syscallFeature.delete();
+
+            File threads = null;
+            threads = new File("threads.txt");
+            threads.delete();
+
+
+
+            vmIdleDetection idleProcess = new vmIdleDetection();
+
+            try {
+                idleProcess.idleVMDetection(ss);
+                //String[] cmd = new String[]{"/bin/sh", "ssh hadoopuser@192.168.122.32 \"cat fibo.c\" "};
+                Process p = new ProcessBuilder("/home/hani/external2/tracecompass-critical/eclipse/learning.sh").start();
+                //p.destroy();
+                File resultFile = new File("result.csv"); //$NON-NLS-1$
+                Integer lineNumber = 1;
+                BufferedReader resultReader ;
+                try {
+                    resultReader = new BufferedReader(new FileReader(resultFile));
+                    String text = null;
+
+                    while ((text = resultReader.readLine()) != null) {
+                        if (text.startsWith("1.")) {
+                        predLine2result.put(lineNumber, 1);
+                        } else {
+                            predLine2result.put(lineNumber, 0);
+
+                        }
+                        lineNumber++;
+                    }
+                    resultReader.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                File threadFile = new File("threads.txt"); //$NON-NLS-1$
+                lineNumber = 1;
+                BufferedReader threadReader ;
+                try {
+                    threadReader = new BufferedReader(new FileReader(threadFile));
+                    String text = null;
+
+                    while ((text = threadReader.readLine()) != null) {
+                        if (predLine2result.get(lineNumber)==0) {
+                            predThread2result.put(Integer.valueOf(text),0);
+                        }
+                        lineNumber++;
+
+                    }
+                    threadReader.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            } catch (AttributeNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (StateSystemDisposedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            /*
+             * This method only returns the arrows in the current time interval
+             * [a,b] of ControlFlowView. Thus, we only optimize for that time
+             * interval
+             */
+            List<ILinkEvent> arrows = getTimeGraphViewer().getTimeGraphControl().getArrows();
+            List<TimeGraphEntry> currentList = getEntryList(parentTrace);
+            if (currentList == null) {
+                return;
+            }
+            List<TimeGraphEntry> listRemove = getEntryList(parentTrace);
+            if (listRemove == null) {
+                return;
+            }
+            Vector<ControlFlowEntry> listControl = new Vector<>();
+
+            System.out.println(listRemove.size());
+            Map<Integer, Long> orderedTidMap = getUpdatedSchedulingColumn().apply(arrows);
+            TimeGraphEntry entryTmp = currentList.get(0);
+            /*
+             * Now that we have our list of ordered tid, it's time to assign a
+             * position for each threads in the view. For this, we assign a
+             * value to an invisible column and sort according to the values in
+             * this column.
+             */
+            System.out.println(predThread2result);
+            for (TimeGraphEntry entry : currentList) {
+
+                if (entry instanceof TraceEntry) {
+                    for (TimeGraphEntry child : ((TraceEntry) entry).getChildren()) {
+
+                        if (child instanceof ControlFlowEntry) {
+                            ControlFlowEntry cEntry = (ControlFlowEntry) child;
+                            //System.out.println(cEntry.getThreadId());
+                            /*
+                             * If the thread is in our list, we give it a
+                             * position. Otherwise, it means there's no activity
+                             * in the current interval for that thread. We set
+                             * its position to Long.MAX_VALUE so it goes to the
+                             * bottom.
+                             */
+
+                                cEntry.setSchedulingPosition(orderedTidMap.getOrDefault(cEntry.getThreadId(), Long.MAX_VALUE));
+                                if (!predThread2result.containsKey(cEntry.getThreadId())) {
+                                    entry.removeChild(child);
+
+
+                                } else {
+                                    System.out.println(cEntry.getThreadId());
+                                }
+
+                        }
+                    }
+                }
+            }
+            //List<ControlFlowEntry>, TimeGraphEntry
+
+            System.out.println(listRemove.size());
+            setEntryComparator(ControlFlowColumnComparators.SCHEDULING_COLUMN_COMPARATOR);
+           // removeFromEntryList(parentTrace, currentList);
+            addEntriesToFlatTree(listControl, entryTmp);
+
             refresh();
         }
 
