@@ -193,4 +193,5 @@ public class CriticalPathPresentationProvider extends TimeGraphPresentationProvi
         }
         return eventHoverToolTipInfo;
     }
+
 }

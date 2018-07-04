@@ -125,6 +125,10 @@ public class CriticalPathDataProvider extends AbstractTmfTraceDataProvider imple
         if (current == null) {
             return new TmfModelResponse<>(null, Status.COMPLETED, CommonStatusMessage.COMPLETED);
         }
+        System.out.println("Will print workers.......");
+        System.out.println(current + "host:" + current.getHostId());
+        graph.getWorkers().forEach(System.out::println);
+        System.out.println("Done");
 
         CriticalPathVisitor visitor = fHorizontalVisitorCache.getUnchecked(current);
         return new TmfModelResponse<>(visitor.getEntries(), Status.COMPLETED, CommonStatusMessage.COMPLETED);
@@ -255,6 +259,8 @@ public class CriticalPathDataProvider extends AbstractTmfTraceDataProvider imple
             fGraph = graph;
             fStart = getTrace().getStartTime().toNanos();
             fEnd = getTrace().getEndTime().toNanos();
+
+            graph.getWorkers().forEach(System.out::println);
 
             TmfVertex head = graph.getHead();
             if (head != null) {
