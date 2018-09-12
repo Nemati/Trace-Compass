@@ -191,6 +191,7 @@ public class CriticalPathPresentationProvider extends TimeGraphPresentationProvi
                 eventHoverToolTipInfo.putAll(tooltipModel);
             }
         }
+        System.out.println(hoverTime);
         return eventHoverToolTipInfo;
     }
 

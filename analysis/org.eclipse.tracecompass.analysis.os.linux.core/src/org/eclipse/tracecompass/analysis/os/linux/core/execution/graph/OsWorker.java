@@ -168,9 +168,13 @@ public class OsWorker implements IGraphWorker {
         return fHostTid.hashCode();
     }
 
+//    @Override
+//    public String toString() {
+//        return '[' + fThreadName + ',' + fHostTid.getTid() + ']';
+//    }
     @Override
     public String toString() {
-        return '[' + fThreadName + ',' + fHostTid.getTid() + ']';
+        return fHostTid.getTid().toString() + ',';
     }
 
 }

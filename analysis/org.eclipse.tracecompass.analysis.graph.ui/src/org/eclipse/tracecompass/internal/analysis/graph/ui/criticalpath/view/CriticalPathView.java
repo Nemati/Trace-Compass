@@ -71,10 +71,12 @@ public class CriticalPathView extends BaseDataProviderTimeGraphView {
     private static final String COLUMN_ELAPSED = Messages.getMessage(Messages.CriticalFlowView_columnElapsed);
     private static final String COLUMN_PERCENT = Messages.getMessage(Messages.CriticalFlowView_columnPercent);
 
+
     private static final String[] COLUMN_NAMES = new String[] {
             COLUMN_PROCESS,
             COLUMN_ELAPSED,
             COLUMN_PERCENT
+
     };
 
     private static final String[] FILTER_COLUMN_NAMES = new String[] {

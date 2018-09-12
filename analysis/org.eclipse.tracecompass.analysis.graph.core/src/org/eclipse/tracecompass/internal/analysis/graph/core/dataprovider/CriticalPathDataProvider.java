@@ -260,7 +260,7 @@ public class CriticalPathDataProvider extends AbstractTmfTraceDataProvider imple
             fStart = getTrace().getStartTime().toNanos();
             fEnd = getTrace().getEndTime().toNanos();
 
-            graph.getWorkers().forEach(System.out::println);
+           // graph.getWorkers().forEach(System.out::println);
 
             TmfVertex head = graph.getHead();
             if (head != null) {
@@ -291,9 +291,16 @@ public class CriticalPathDataProvider extends AbstractTmfTraceDataProvider imple
             }
             fStart = Long.min(getTrace().getStartTime().toNanos(), first.getTs());
             fEnd = Long.max(getTrace().getEndTime().toNanos(), last.getTs());
-            Long sum = fStatistics.getSum(owner);
-            Double percent = fStatistics.getPercent(owner);
+            Long sum =  (fStatistics.getSum(owner));
+            double total = sum/Math.pow(10.0, 3.0);
+            double running = fStatistics.getSum(owner, EdgeType.RUNNING)/Math.pow(10.0, 3.0);
+            double network = fStatistics.getSum(owner, EdgeType.NETWORK)/Math.pow(10.0, 3.0);
+            double block = fStatistics.getSum(owner, EdgeType.BLOCK_DEVICE)/Math.pow(10.0, 3.0);
+            double preempted = fStatistics.getSum(owner, EdgeType.PREEMPTED)/Math.pow(10.0, 3.0);
+            double timer = fStatistics.getSum(owner, EdgeType.TIMER)/Math.pow(10.0, 3.0);
 
+            System.out.println(owner.toString() + total + ","+ running+","+ network+","+ block +","+ preempted+ ","+ timer);
+            Double percent = fStatistics.getPercent(owner);
             // create host entry
             String host = owner.getHostId();
             long parentId = fHostIdToEntryId.computeIfAbsent(host, h -> ATOMIC_LONG.getAndIncrement());
